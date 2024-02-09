@@ -7,6 +7,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
+    - name: Install dependencies
+      run: npm install
+
     - name: vuepress-deploy
       uses: jenkey2011/vuepress-deploy@master
       env:
