@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 const HomepageBackground = lazy(() => import("./components/HomepageBackground"));
+const PerlinContoursRoute = lazy(() => import("./routes/PerlinContoursRoute"));
 const ScanEffectRoute = lazy(() => import("./routes/ScanEffectRoute"));
 
 export default function App() {
@@ -17,7 +18,13 @@ export default function App() {
 
             <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-between px-5 py-5 text-[10px] uppercase tracking-[0.32em] text-white/45 sm:px-7">
               <span>Shader Background Lab</span>
-              <div className="pointer-events-auto">
+              <div className="pointer-events-auto flex flex-wrap justify-end gap-3">
+                <Link
+                  className="rounded-full border border-white/10 bg-black/10 px-4 py-2 text-white/70 transition duration-200 ease-out hover:bg-white/10 hover:text-white"
+                  to="/perlin-contours"
+                >
+                  Open Perlin Contours
+                </Link>
                 <Link
                   className="rounded-full border border-white/10 bg-black/10 px-4 py-2 text-white/70 transition duration-200 ease-out hover:bg-white/10 hover:text-white"
                   to="/scan-effect"
@@ -27,6 +34,14 @@ export default function App() {
               </div>
             </div>
           </main>
+        }
+      />
+      <Route
+        path="/perlin-contours"
+        element={
+          <Suspense fallback={null}>
+            <PerlinContoursRoute />
+          </Suspense>
         }
       />
       <Route

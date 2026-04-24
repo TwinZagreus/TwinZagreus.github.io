@@ -7,7 +7,7 @@ import * as THREE from "three/webgpu";
 export default function WebGPUPostProcessing({ strength = 1, threshold = 1 }) {
   const { gl, scene, camera } = useThree();
 
-  const renderer = useMemo(() => {
+  const postProcessing = useMemo(() => {
     const postProcessing = new THREE.PostProcessing(gl);
     const scenePass = pass(scene, camera);
     const scenePassColor = scenePass.getTextureNode("output");
@@ -18,13 +18,13 @@ export default function WebGPUPostProcessing({ strength = 1, threshold = 1 }) {
   }, [camera, gl, scene, strength, threshold]);
 
   useFrame(() => {
-    if (typeof renderer.renderAsync === "function") {
-      renderer.renderAsync();
+    if (typeof gl.renderAsync === "function") {
+      postProcessing.renderAsync();
       return;
     }
 
-    if (typeof renderer.render === "function") {
-      renderer.render();
+    if (typeof postProcessing.render === "function") {
+      postProcessing.render();
     }
   }, 1);
 
