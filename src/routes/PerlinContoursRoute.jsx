@@ -1,9 +1,10 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import { memo, useEffect, useRef, useState } from "react";
-import MouseRevealLayer from "../components/MouseRevealLayer";
 import { Link } from "react-router-dom";
 import * as THREE from "three";
+import MouseRevealLayer from "../components/MouseRevealLayer";
+import { useAuth } from "../context/AuthContext";
 
 const DEFAULT_CONTROLS = {
   speed: 1,
@@ -330,6 +331,7 @@ const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion
 
 export default function PerlinContoursRoute() {
   const isReducedMotion = useReducedMotion();
+  const { isAuthenticated, openLoginModal } = useAuth();
   const [controls, setControls] = useState(DEFAULT_CONTROLS);
   const [imageControls, setImageControls] = useState(DEFAULT_IMAGE_CONTROLS);
   const controlsRef = useRef(DEFAULT_CONTROLS);
@@ -381,15 +383,28 @@ export default function PerlinContoursRoute() {
         <div className="pointer-events-auto flex flex-wrap justify-end gap-3">
           <Link
             className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
+            to="/blog"
+          >
+            Open Blog
+          </Link>
+          <Link
+            className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
             to="/scan-effect"
           >
             Open Scan Effect
           </Link>
+          <button
+            className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
+            onClick={() => openLoginModal("/blog")}
+            type="button"
+          >
+            {isAuthenticated ? "Manage Blog" : "Login / 登录"}
+          </button>
           <Link
             className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
-            to="/"
+            to="/home"
           >
-            Back Home
+            Home Lab
           </Link>
         </div>
       </div>
