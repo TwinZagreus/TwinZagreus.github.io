@@ -4,12 +4,13 @@ A Vite + React playground for premium motorsport-style visual experiments, now e
 
 ## Routes
 
-- `/` - perlin contour landing page with shader controls and reveal-image layer
+- `/` - perlin contour landing page with shader controls, reveal-image layer, and a custom Three.js loading overlay
 - `/blog` - public blog index, switches into admin mode after login
 - `/blog/:slug` - public blog detail
 - `/blog/new` - protected post editor
 - `/blog/:slug/edit` - protected post editor
 - `/home` - dark cinematic homepage background experiment
+- `/loading-overlay-lab` - static loading-overlay preview route for tuning Twin/Z size, spacing, and mobile layout
 - `/scan-effect` - depth-map scan study inspired by `d3adrabbit/ScanningEffectWithDepthMap`, adapted into a stable WebGL shader route
 
 ## Tech Stack
@@ -47,6 +48,8 @@ The project work in this repo was guided by these Codex skills:
 
 ## Notes
 
+- The homepage loading experience is driven by `src/components/ThreeLoadingOverlay.jsx` and uses an orthographic Three.js scene, canvas-based logo textures, and staggered falling slice panels for exit transition.
+- Shared project colors live in `src/lib/projectColors.js` and are re-exported from `src/lib/theme.js`.
 - The `/scan-effect` route currently uses a stable WebGL shader implementation rather than a direct production WebGPU/TSL port, because the original reference stack was not fully compatible with this local app/runtime combination.
 - Assets for the scan study are stored in `public/scan-effect`.
 - The blog backend lives in `backend/`, uses SQLite, and exposes `/api/*` plus `/uploads/*`.

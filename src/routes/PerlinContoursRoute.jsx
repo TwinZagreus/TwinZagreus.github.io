@@ -1,9 +1,10 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as THREE from "three";
 import MouseRevealLayer from "../components/MouseRevealLayer";
+import ThreeLoadingOverlay, { LOADING_OVERLAY_CONFIG } from "../components/ThreeLoadingOverlay";
 import { useAuth } from "../context/AuthContext";
 
 const DEFAULT_CONTROLS = {
@@ -332,10 +333,65 @@ const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion
 export default function PerlinContoursRoute() {
   const isReducedMotion = useReducedMotion();
   const { isAuthenticated, openLoginModal } = useAuth();
+  const [isLoadingReady, setIsLoadingReady] = useState(false);
+  const [isRevealReady, setIsRevealReady] = useState(false);
   const [controls, setControls] = useState(DEFAULT_CONTROLS);
   const [imageControls, setImageControls] = useState(DEFAULT_IMAGE_CONTROLS);
   const controlsRef = useRef(DEFAULT_CONTROLS);
   const imageControlsRef = useRef(DEFAULT_IMAGE_CONTROLS);
+  const loadingTimerRef = useRef(null);
+  const loadingFallbackRef = useRef(null);
+  const loadingConfig = useMemo(
+    () => ({
+      ...LOADING_OVERLAY_CONFIG,
+      sliceFallDistance: Math.round(Math.max(window.innerHeight * 1.18, 960)),
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    let handleLoad;
+
+    const finish = () => {
+      if (!cancelled) {
+        setIsLoadingReady(true);
+      }
+    };
+
+    const windowLoaded =
+      document.readyState === "complete"
+        ? Promise.resolve()
+        : new Promise((resolve) => {
+            handleLoad = () => resolve();
+            window.addEventListener("load", handleLoad, { once: true });
+          });
+
+    const fontsReady = document.fonts?.ready ?? Promise.resolve();
+    const minimumVisible = new Promise((resolve) => {
+      loadingTimerRef.current = window.setTimeout(resolve, 850);
+    });
+    const revealReady = isRevealReady
+      ? Promise.resolve()
+      : new Promise((resolve) => {
+          loadingFallbackRef.current = window.setTimeout(resolve, 2200);
+        });
+
+    Promise.all([windowLoaded, fontsReady, minimumVisible, revealReady]).then(finish);
+
+    return () => {
+      cancelled = true;
+      if (handleLoad) {
+        window.removeEventListener("load", handleLoad);
+      }
+      if (loadingTimerRef.current) {
+        window.clearTimeout(loadingTimerRef.current);
+      }
+      if (loadingFallbackRef.current) {
+        window.clearTimeout(loadingFallbackRef.current);
+      }
+    };
+  }, [isRevealReady]);
 
   const updateControl = (key, value) => {
     const nextValue = Number(value);
@@ -368,7 +424,11 @@ export default function PerlinContoursRoute() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f5f3ee]">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(236,233,226,0.3)_100%)]" />
-      <MouseRevealLayer controlsRef={imageControlsRef} />
+      <MouseRevealLayer controlsRef={imageControlsRef} onReady={() => setIsRevealReady(true)} />
+      <ThreeLoadingOverlay
+        config={loadingConfig}
+        isReady={isLoadingReady}
+      />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-5 py-5 sm:px-7">
         <div>

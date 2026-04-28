@@ -154,9 +154,10 @@ function createRenderTarget(width, height) {
   });
 }
 
-function MouseRevealScene({ controlsRef }) {
+function MouseRevealScene({ controlsRef, onReady }) {
   const { gl, size } = useThree();
   const [baseTexture, maskTexture] = useLoader(THREE.TextureLoader, ["/img/my.png", "/img/mask-01.png"]);
+  const readySentRef = useRef(false);
 
   const revealMaterialRef = useRef(null);
   const targetPointerRef = useRef(new THREE.Vector2(0.5, 0.5));
@@ -230,7 +231,12 @@ function MouseRevealScene({ controlsRef }) {
     revealUniformsRef.current.uMask.value = maskTexture;
     revealUniformsRef.current.uBaseSize.value.set(baseTexture.image.width, baseTexture.image.height);
     revealUniformsRef.current.uMaskSize.value.set(maskTexture.image.width, maskTexture.image.height);
-  }, [baseTexture, gl, maskTexture]);
+
+    if (!readySentRef.current) {
+      readySentRef.current = true;
+      onReady?.();
+    }
+  }, [baseTexture, gl, maskTexture, onReady]);
 
   useEffect(() => {
     revealUniformsRef.current.uResolution.value.set(size.width, size.height);
@@ -348,7 +354,7 @@ function MouseRevealScene({ controlsRef }) {
   );
 }
 
-export default function MouseRevealLayer({ controlsRef }) {
+export default function MouseRevealLayer({ controlsRef, onReady }) {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
       <Canvas
@@ -357,7 +363,7 @@ export default function MouseRevealLayer({ controlsRef }) {
         orthographic
         camera={{ position: [0, 0, 1], zoom: 1 }}
       >
-        <MouseRevealScene controlsRef={controlsRef} />
+        <MouseRevealScene controlsRef={controlsRef} onReady={onReady} />
       </Canvas>
     </div>
   );

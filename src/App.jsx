@@ -7,6 +7,7 @@ const BlogEditorRoute = lazy(() => import("./routes/BlogEditorRoute"));
 const BlogListRoute = lazy(() => import("./routes/BlogListRoute"));
 const BlogPostRoute = lazy(() => import("./routes/BlogPostRoute"));
 const HomepageBackground = lazy(() => import("./components/HomepageBackground"));
+const LoadingOverlayLabRoute = lazy(() => import("./routes/LoadingOverlayLabRoute"));
 const PerlinContoursRoute = lazy(() => import("./routes/PerlinContoursRoute"));
 const ScanEffectRoute = lazy(() => import("./routes/ScanEffectRoute"));
 
@@ -69,6 +70,14 @@ export default function App() {
           element={
             <Suspense fallback={null}>
               <ScanEffectRoute />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/loading-overlay-lab"
+          element={
+            <Suspense fallback={null}>
+              <LoadingOverlayLabRoute />
             </Suspense>
           }
         />
