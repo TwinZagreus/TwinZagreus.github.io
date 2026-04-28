@@ -3,15 +3,19 @@ import { useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as THREE from "three";
+import { AppButton } from "../components/AppButton";
 import MouseRevealLayer from "../components/MouseRevealLayer";
 import ThreeLoadingOverlay, { LOADING_OVERLAY_CONFIG } from "../components/ThreeLoadingOverlay";
 import { useAuth } from "../context/AuthContext";
+import { PROJECT_COLOR_MAP, PROJECT_COLORS, PROJECT_COLOR_SEQUENCE } from "../lib/theme";
 
 const DEFAULT_CONTROLS = {
+  backgroundColor: PROJECT_COLOR_MAP.coral100,
+  lineColor: PROJECT_COLOR_MAP.neutral900,
   speed: 1,
   sharpness: 0.36,
-  curvature: 0.58,
-  thickness: 1.08,
+  curvature: 0,
+  thickness: 2,
 };
 
 const DEFAULT_IMAGE_CONTROLS = {
@@ -46,6 +50,8 @@ const fragmentShader = `
   uniform float uSharpness;
   uniform float uCurvature;
   uniform float uThickness;
+  uniform vec3 uBackgroundColor;
+  uniform vec3 uLineColor;
 
   vec2 hash2(vec2 p) {
     p = vec2(
@@ -192,11 +198,11 @@ const fragmentShader = `
     float majorMask = 1.0 - step(0.1, mod(contourIndex, 6.0));
     float midMask = 1.0 - step(0.1, mod(contourIndex + 3.0, 12.0));
 
-    vec3 paper = vec3(0.972, 0.969, 0.962);
-    vec3 paperShade = vec3(0.955, 0.952, 0.944);
-    vec3 majorLine = vec3(0.696, 0.688, 0.66);
-    vec3 minorLine = vec3(0.77, 0.762, 0.736);
-    vec3 midLine = vec3(0.732, 0.724, 0.698);
+    vec3 paper = uBackgroundColor;
+    vec3 paperShade = mix(uBackgroundColor, uLineColor, 0.08);
+    vec3 majorLine = mix(uLineColor, vec3(0.0), 0.04);
+    vec3 minorLine = mix(uLineColor, uBackgroundColor, 0.24);
+    vec3 midLine = mix(uLineColor, uBackgroundColor, 0.14);
 
     float backgroundDrift = smoothstep(0.0, 1.0, macro * 0.74 + detail * 0.2 + micro * 0.06);
     vec3 color = mix(paper, paperShade, backgroundDrift * 0.07 + eddyMask * 0.01);
@@ -213,6 +219,8 @@ function ContourField({ controlsRef, isReducedMotion }) {
   const materialRef = useRef(null);
   const pointerRef = useRef(new THREE.Vector2(0, 0));
   const pointerTargetRef = useRef(new THREE.Vector2(0, 0));
+  const backgroundColorTargetRef = useRef(new THREE.Color(DEFAULT_CONTROLS.backgroundColor));
+  const lineColorTargetRef = useRef(new THREE.Color(DEFAULT_CONTROLS.lineColor));
   const uniformsRef = useRef(null);
   const { size } = useThree();
 
@@ -226,6 +234,8 @@ function ContourField({ controlsRef, isReducedMotion }) {
       uSharpness: { value: controlsRef.current.sharpness },
       uCurvature: { value: controlsRef.current.curvature },
       uThickness: { value: controlsRef.current.thickness },
+      uBackgroundColor: { value: new THREE.Color(controlsRef.current.backgroundColor) },
+      uLineColor: { value: new THREE.Color(controlsRef.current.lineColor) },
     };
   }
 
@@ -300,6 +310,10 @@ function ContourField({ controlsRef, isReducedMotion }) {
       9,
       delta,
     );
+    backgroundColorTargetRef.current.set(controlsRef.current.backgroundColor);
+    lineColorTargetRef.current.set(controlsRef.current.lineColor);
+    material.uniforms.uBackgroundColor.value.lerp(backgroundColorTargetRef.current, 1.0 - Math.exp(-delta * 10.0));
+    material.uniforms.uLineColor.value.lerp(lineColorTargetRef.current, 1.0 - Math.exp(-delta * 10.0));
   });
 
   return (
@@ -422,7 +436,10 @@ export default function PerlinContoursRoute() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f5f3ee]">
+    <main
+      className="relative min-h-screen overflow-hidden"
+      style={{ backgroundColor: controls.backgroundColor }}
+    >
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(236,233,226,0.3)_100%)]" />
       <MouseRevealLayer controlsRef={imageControlsRef} onReady={() => setIsRevealReady(true)} />
       <ThreeLoadingOverlay
@@ -434,38 +451,29 @@ export default function PerlinContoursRoute() {
         <div>
           <div className="text-[10px] uppercase tracking-[0.32em] text-[#7c796f]">Perlin contour study</div>
           <h1 className="mt-3 max-w-lg font-['Trebuchet_MS','Segoe_UI',sans-serif] text-[clamp(2.8rem,8vw,6.5rem)] uppercase leading-[0.88] tracking-[0.08em] text-[#4f544f]">
-            Perlin
+            Perlin 真是
             <br />
             Topography
           </h1>
         </div>
 
         <div className="pointer-events-auto flex flex-wrap justify-end gap-3">
-          <Link
-            className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
-            to="/blog"
-          >
+          <AppButton component={Link} to="/blog" tone="overlay">
             Open Blog
-          </Link>
-          <Link
-            className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
-            to="/scan-effect"
-          >
+          </AppButton>
+          <AppButton component={Link} to="/scan-effect" tone="overlay">
             Open Scan Effect
-          </Link>
-          <button
-            className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
+          </AppButton>
+          <AppButton
             onClick={() => openLoginModal("/blog")}
+            tone="overlay"
             type="button"
           >
-            {isAuthenticated ? "Manage Blog" : "Login / 登录"}
-          </button>
-          <Link
-            className="rounded-full border border-[#d7d2c7] bg-[#fbfaf7]/90 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#706d63] backdrop-blur-md transition duration-200 ease-out hover:bg-white hover:text-[#494d48]"
-            to="/home"
-          >
+            {isAuthenticated ? "Manage Blog" : "Login / 鐧诲綍"}
+          </AppButton>
+          <AppButton component={Link} to="/home" tone="overlay">
             Home Lab
-          </Link>
+          </AppButton>
         </div>
       </div>
 
@@ -475,7 +483,7 @@ export default function PerlinContoursRoute() {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute right-4 top-28 z-30 sm:right-7 sm:top-32">
+      {/* <div className="pointer-events-none absolute right-4 top-28 z-30 sm:right-7 sm:top-32">
         <section
           aria-label="Contour controls"
           className="pointer-events-auto w-[min(320px,calc(100vw-2rem))] rounded-2xl border border-[#d9d4ca] bg-[#fbfaf7]/92 p-4 text-[#5f5b52] shadow-[0_18px_48px_rgba(72,62,42,0.12)] backdrop-blur-md"
@@ -699,7 +707,7 @@ export default function PerlinContoursRoute() {
             </div>
           </div>
         </section>
-      </div>
+      </div> */}
 
       <ContourCanvas controlsRef={controlsRef} isReducedMotion={Boolean(isReducedMotion)} />
     </main>

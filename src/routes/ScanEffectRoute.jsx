@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import * as THREE from "three";
+import { AppButton } from "../components/AppButton";
 
 const WIDTH = 1600;
 const HEIGHT = 900;
@@ -171,12 +172,9 @@ export default function ScanEffectRoute() {
           <span className="ml-2 text-white/78">ScanningEffectWithDepthMap</span>
         </div>
         <div className="pointer-events-auto">
-          <Link
-            className="rounded-full border border-white/12 bg-black/20 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-white/74 backdrop-blur-md transition duration-200 ease-out hover:bg-white/10 hover:text-white"
-            to="/"
-          >
+          <AppButton component={Link} to="/" tone="darkOverlay">
             Back Home
-          </Link>
+          </AppButton>
         </div>
       </div>
 

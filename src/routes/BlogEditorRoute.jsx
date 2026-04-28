@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AppButton } from "../components/AppButton";
 import BlogLayout from "../components/BlogLayout";
 import { createPost, getAdminPostBySlug, updatePost, uploadAsset } from "../lib/api";
 import { slugify } from "../lib/blog";
@@ -165,19 +166,17 @@ export default function BlogEditorRoute() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Link
-                  className="rounded-full border border-[#d8d2c8] px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#6b665c] transition hover:bg-white"
-                  to="/blog"
-                >
+                <AppButton component={Link} sx={{ "&:hover": { bgcolor: "#ffffff", borderColor: "#d8d2c8", color: "#6b665c" } }} to="/blog" tone="ghost">
                   Cancel
-                </Link>
-                <button
-                  className="rounded-full bg-[#4f6550] px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-white transition hover:bg-[#445744] disabled:cursor-not-allowed disabled:bg-[#94a091]"
+                </AppButton>
+                <AppButton
                   disabled={isSaving}
+                  sx={{ "&.Mui-disabled": { bgcolor: "#94a091", borderColor: "#94a091", color: "#ffffff" } }}
+                  tone="primary"
                   type="submit"
                 >
                   {isSaving ? "Saving..." : isEditing ? "Update Post" : "Publish Draft"}
-                </button>
+                </AppButton>
               </div>
             </div>
 
@@ -238,14 +237,20 @@ export default function BlogEditorRoute() {
               </label>
 
               <div className="flex flex-wrap gap-3">
-                <label className="rounded-full border border-[#d8d2c8] bg-white px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#6b665c] transition hover:bg-[#f5f8f0] hover:text-[#506651]">
+                <AppButton
+                  component="label"
+                  sx={{ "&:hover": { bgcolor: "#f5f8f0", borderColor: "#d8d2c8", color: "#506651" } }}
+                >
                   <input className="hidden" onChange={handleCoverUpload} type="file" />
                   {isUploadingCover ? "Uploading Cover..." : "Upload Cover"}
-                </label>
-                <label className="rounded-full border border-[#d8d2c8] bg-white px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#6b665c] transition hover:bg-[#f5f8f0] hover:text-[#506651]">
+                </AppButton>
+                <AppButton
+                  component="label"
+                  sx={{ "&:hover": { bgcolor: "#f5f8f0", borderColor: "#d8d2c8", color: "#506651" } }}
+                >
                   <input className="hidden" onChange={handleInlineUpload} type="file" />
                   {isUploadingInline ? "Uploading Inline..." : "Insert Body Image"}
-                </label>
+                </AppButton>
               </div>
 
               <label className="block">

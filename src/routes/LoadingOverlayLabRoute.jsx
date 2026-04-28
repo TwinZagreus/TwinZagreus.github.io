@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AppButton } from "../components/AppButton";
 import ThreeLoadingOverlay, { LOADING_OVERLAY_CONFIG } from "../components/ThreeLoadingOverlay";
 
 const DEFAULT_LAB_CONFIG = {
@@ -81,13 +82,13 @@ export default function LoadingOverlayLabRoute() {
                 调整大小和间距，确认初始构图。这个页面不会自动播放退出动画。
               </div>
             </div>
-            <button
-              className="rounded-full border border-[#d6dbe1] px-3 py-1 text-[10px] uppercase tracking-[0.26em] text-[#68717d] transition hover:bg-white"
+            <AppButton
               onClick={reset}
+              sx={{ px: 1.5, py: 0.5, color: "#68717d", borderColor: "#d6dbe1", "&:hover": { bgcolor: "#ffffff", borderColor: "#d6dbe1", color: "#68717d" } }}
               type="button"
             >
               Reset
-            </button>
+            </AppButton>
           </div>
 
           <div className="mt-5 space-y-4">
@@ -118,18 +119,12 @@ export default function LoadingOverlayLabRoute() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              className="rounded-full border border-[#d6dbe1] bg-white px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#616975] transition hover:bg-[#f7fafc]"
-              to="/"
-            >
+            <AppButton component={Link} sx={{ borderColor: "#d6dbe1", color: "#616975", "&:hover": { bgcolor: "#f7fafc", borderColor: "#d6dbe1", color: "#616975" } }} to="/">
               Back Home
-            </Link>
-            <Link
-              className="rounded-full border border-[#d6dbe1] bg-white px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#616975] transition hover:bg-[#f7fafc]"
-              to="/perlin-contours"
-            >
+            </AppButton>
+            <AppButton component={Link} sx={{ borderColor: "#d6dbe1", color: "#616975", "&:hover": { bgcolor: "#f7fafc", borderColor: "#d6dbe1", color: "#616975" } }} to="/perlin-contours">
               Perlin Route
-            </Link>
+            </AppButton>
           </div>
         </section>
       </div>

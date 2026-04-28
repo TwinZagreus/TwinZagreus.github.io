@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { AppButton } from "./AppButton";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginModal() {
@@ -47,13 +48,9 @@ export default function LoginModal() {
               登录后才能新建、编辑、删除博客。未登录状态默认只读。
             </p>
           </div>
-          <button
-            className="rounded-full border border-[#d8d2c8] px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-[#6a665c] transition hover:bg-white"
-            onClick={closeLoginModal}
-            type="button"
-          >
+          <AppButton onClick={closeLoginModal} sx={{ px: 1.5, py: 0.5, letterSpacing: "0.3em", color: "#6a665c" }} type="button">
             Close
-          </button>
+          </AppButton>
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={submit}>
@@ -82,13 +79,23 @@ export default function LoginModal() {
 
           {error ? <div className="rounded-2xl bg-[#f2d8d1] px-4 py-3 text-sm text-[#7a3d31]">{error}</div> : null}
 
-          <button
-            className="w-full rounded-2xl bg-[#4e6550] px-4 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition hover:bg-[#425545] disabled:cursor-not-allowed disabled:bg-[#93a08e]"
+          <AppButton
             disabled={isSubmitting || isCheckingSession}
+            fullWidth
+            sx={{
+              borderRadius: "16px",
+              py: 1.5,
+              fontSize: "11px",
+              bgcolor: "#4e6550",
+              borderColor: "#4e6550",
+              color: "#ffffff",
+              "&:hover": { bgcolor: "#425545", borderColor: "#425545" },
+              "&.Mui-disabled": { bgcolor: "#93a08e", borderColor: "#93a08e", color: "#ffffff" },
+            }}
             type="submit"
           >
             {isSubmitting ? "Signing In..." : "Sign In"}
-          </button>
+          </AppButton>
         </form>
       </div>
     </div>

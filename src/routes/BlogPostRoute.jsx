@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AppButton } from "../components/AppButton";
 import BlogLayout from "../components/BlogLayout";
 import { useAuth } from "../context/AuthContext";
 import { deletePost, getAdminPostBySlug, getPublicPost } from "../lib/api";
@@ -98,28 +99,23 @@ export default function BlogPostRoute() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  className="rounded-full border border-[#d8d2c8] px-4 py-2 text-[#6a665d] transition hover:bg-white"
-                  to="/blog"
-                >
+                <AppButton component={Link} sx={{ "&:hover": { bgcolor: "#ffffff", borderColor: "#d8d2c8", color: "#6a665d" } }} to="/blog" tone="ghost">
                   Back
-                </Link>
+                </AppButton>
                 {isAuthenticated ? (
                   <>
-                    <Link
-                      className="rounded-full border border-[#d8d2c8] bg-white px-4 py-2 text-[#6a665d] transition hover:bg-[#eef3e8] hover:text-[#4e654e]"
-                      to={`/blog/${post.slug}/edit`}
-                    >
+                    <AppButton component={Link} to={`/blog/${post.slug}/edit`}>
                       Edit
-                    </Link>
-                    <button
-                      className="rounded-full border border-[#d8d2c8] bg-[#5e413c] px-4 py-2 text-white transition hover:bg-[#4d342f] disabled:cursor-not-allowed disabled:opacity-60"
+                    </AppButton>
+                    <AppButton
                       disabled={isDeleting}
                       onClick={handleDelete}
+                      sx={{ "&.Mui-disabled": { opacity: 0.6, color: "#ffffff" } }}
+                      tone="danger"
                       type="button"
                     >
                       {isDeleting ? "Deleting..." : "Delete"}
-                    </button>
+                    </AppButton>
                   </>
                 ) : null}
               </div>

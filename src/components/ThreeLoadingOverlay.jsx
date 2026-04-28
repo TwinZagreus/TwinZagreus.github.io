@@ -9,7 +9,7 @@ const AREA_FONT_URL = "/font/AreaKilometer50-gxmEq.otf";
 let areaFontPromise = null;
 
 export const LOADING_OVERLAY_CONFIG = Object.freeze({
-  backgroundColor: PROJECT_COLOR_MAP.coral300, // Loading 全屏背景色
+  backgroundColor: PROJECT_COLOR_MAP.coral100, // Loading 全屏背景色
   logoText: "TwinZ", // Logo 文案
   logoColor: PROJECT_COLOR_MAP.ink950, // Twin 文字颜色
   animatedLetterColor: PROJECT_COLOR_MAP.coral, // Z 红框颜色

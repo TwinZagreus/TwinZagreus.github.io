@@ -10,6 +10,9 @@
     "server": "python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8010"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^9.0.0",
     "@react-three/fiber": "^8.17.10",
     "framer-motion": "^12.23.12",
     "gsap": "^3.12.7",

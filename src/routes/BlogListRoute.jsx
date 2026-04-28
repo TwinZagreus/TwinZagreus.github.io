@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { AppButton } from "../components/AppButton";
 import BlogLayout from "../components/BlogLayout";
 import { useAuth } from "../context/AuthContext";
 import { listAdminPosts, listPublicPosts } from "../lib/api";
@@ -46,19 +47,18 @@ function PostCard({ post, showStatus }) {
         <p className="mt-4 text-sm leading-7 text-[#666255]">{post.excerpt || "No excerpt yet."}</p>
 
         <div className="mt-6 flex items-center justify-between gap-4">
-          <Link
-            className="rounded-full border border-[#d8d2c8] bg-white px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#666255] transition hover:bg-[#f3f6ef] hover:text-[#4d634d]"
-            to={`/blog/${post.slug}`}
-          >
+          <AppButton component={Link} to={`/blog/${post.slug}`}>
             Read Post
-          </Link>
+          </AppButton>
           {showStatus ? (
-            <Link
-              className="rounded-full border border-[#d8d2c8] px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-[#666255] transition hover:bg-white"
+            <AppButton
+              component={Link}
+              sx={{ "&:hover": { bgcolor: "#ffffff", borderColor: "#d8d2c8", color: "#666255" } }}
               to={`/blog/${post.slug}/edit`}
+              tone="ghost"
             >
               Edit
-            </Link>
+            </AppButton>
           ) : null}
         </div>
       </div>
