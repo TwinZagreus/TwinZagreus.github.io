@@ -1,7 +1,9 @@
+"use client";
+
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../lib/navigation";
 import * as THREE from "three";
 import { AppButton } from "../components/AppButton";
 import MouseRevealLayer from "../components/MouseRevealLayer";
@@ -330,16 +332,27 @@ function ContourField({ controlsRef, isReducedMotion }) {
 }
 
 const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion }) {
+  const canvasHostRef = useRef(null);
+  const [eventSource, setEventSource] = useState(null);
+
+  useEffect(() => {
+    setEventSource(canvasHostRef.current);
+  }, []);
+
   return (
-    <div aria-hidden className="h-screen">
-      <Canvas
-        dpr={[1.5, 2.5]}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-        orthographic
-        camera={{ position: [0, 0, 1], zoom: 1 }}
-      >
-        <ContourField controlsRef={controlsRef} isReducedMotion={isReducedMotion} />
-      </Canvas>
+    <div aria-hidden className="h-screen" ref={canvasHostRef}>
+      {eventSource ? (
+        <Canvas
+          dpr={[1.5, 2.5]}
+          eventPrefix="client"
+          eventSource={eventSource}
+          gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+          orthographic
+          camera={{ position: [0, 0, 1], zoom: 1 }}
+        >
+          <ContourField controlsRef={controlsRef} isReducedMotion={isReducedMotion} />
+        </Canvas>
+      ) : null}
     </div>
   );
 });

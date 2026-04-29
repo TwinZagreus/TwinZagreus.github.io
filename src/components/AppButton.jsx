@@ -1,6 +1,8 @@
+"use client";
+
 import Button from "@mui/material/Button";
 import { alpha } from "@mui/material/styles";
-import { NavLink } from "react-router-dom";
+import { NavLink } from "../lib/navigation";
 
 const FONT_FAMILY = ['Trebuchet MS', 'Segoe UI', "sans-serif"].join(",");
 

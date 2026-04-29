@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 const vertexShader = `
@@ -355,16 +355,27 @@ function MouseRevealScene({ controlsRef, onReady }) {
 }
 
 export default function MouseRevealLayer({ controlsRef, onReady }) {
+  const canvasHostRef = useRef(null);
+  const [eventSource, setEventSource] = useState(null);
+
+  useEffect(() => {
+    setEventSource(canvasHostRef.current);
+  }, []);
+
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
-      <Canvas
-        dpr={[1.5, 2.5]}
-        gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
-        orthographic
-        camera={{ position: [0, 0, 1], zoom: 1 }}
-      >
-        <MouseRevealScene controlsRef={controlsRef} onReady={onReady} />
-      </Canvas>
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-10" ref={canvasHostRef}>
+      {eventSource ? (
+        <Canvas
+          dpr={[1.5, 2.5]}
+          eventPrefix="client"
+          eventSource={eventSource}
+          gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
+          orthographic
+          camera={{ position: [0, 0, 1], zoom: 1 }}
+        >
+          <MouseRevealScene controlsRef={controlsRef} onReady={onReady} />
+        </Canvas>
+      ) : null}
     </div>
   );
 }

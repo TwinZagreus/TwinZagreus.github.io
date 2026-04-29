@@ -1,5 +1,7 @@
+"use client";
+
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { Link } from "react-router-dom";
+import { Link } from "../lib/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import * as THREE from "three";
@@ -155,6 +157,12 @@ function ScanEffectScene({ setLoaded }) {
 
 export default function ScanEffectRoute() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const canvasHostRef = useRef(null);
+  const [eventSource, setEventSource] = useState(null);
+
+  useEffect(() => {
+    setEventSource(canvasHostRef.current);
+  }, []);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
@@ -184,12 +192,19 @@ export default function ScanEffectRoute() {
         </div>
       </div>
 
-      <div className="h-screen">
-        <Canvas dpr={[1, 1.5]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
-          <Suspense fallback={null}>
-            <ScanEffectScene setLoaded={setIsLoaded} />
-          </Suspense>
-        </Canvas>
+      <div className="h-screen" ref={canvasHostRef}>
+        {eventSource ? (
+          <Canvas
+            dpr={[1, 1.5]}
+            eventPrefix="client"
+            eventSource={eventSource}
+            gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+          >
+            <Suspense fallback={null}>
+              <ScanEffectScene setLoaded={setIsLoaded} />
+            </Suspense>
+          </Canvas>
+        ) : null}
       </div>
     </main>
   );

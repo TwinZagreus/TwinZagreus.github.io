@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../lib/navigation";
 import { AppButton } from "../components/AppButton";
 import BlogLayout from "../components/BlogLayout";
 import { useAuth } from "../context/AuthContext";
@@ -139,7 +141,7 @@ export default function BlogListRoute() {
           <section className="rounded-[30px] border border-[#ddd7cc] bg-[#fcfbf8] p-6 shadow-[0_18px_40px_rgba(73,58,36,0.06)]">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8c8577]">System Notes</div>
             <div className="mt-4 space-y-4 text-sm leading-7 text-[#676255]">
-              <p>后端是 FastAPI，内容存 SQLite，本地上传直接落磁盘。</p>
+              <p>后端是 Next.js Route Handlers，内容存 SQLite，本地上传直接落磁盘。</p>
               <p>登录入口不是单独后台路由，而是全局弹窗。这样浏览流和管理流在同一套页面里。</p>
             </div>
           </section>

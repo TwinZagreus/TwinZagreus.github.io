@@ -1,6 +1,6 @@
 # motorsport-background-demo
 
-A Vite + React playground for premium motorsport-style visual experiments, now extended with a FastAPI-powered blog system.
+A Next.js App Router playground for premium motorsport-style visual experiments, now extended with an in-app SQLite blog system.
 
 ## Routes
 
@@ -15,17 +15,17 @@ A Vite + React playground for premium motorsport-style visual experiments, now e
 
 ## Tech Stack
 
+- Next.js App Router
 - React
-- Vite
 - Tailwind CSS
 - Framer Motion
 - Three.js
 - @react-three/fiber
 - GSAP
-- React Router
+- MUI
 - React Markdown
-- FastAPI
 - SQLite
+- better-sqlite3
 
 ## Skills Used
 
@@ -43,31 +43,45 @@ The project work in this repo was guided by these Codex skills:
 - `find-skills`
   Used to discover and evaluate additional skills relevant to creative WebGL and shader-heavy frontend work.
 
-- `fastapi-python`
-  Used to structure the blog backend, cookie authentication, upload flow, and CRUD API design.
-
 ## Notes
 
 - The homepage loading experience is driven by `src/components/ThreeLoadingOverlay.jsx` and uses an orthographic Three.js scene, canvas-based logo textures, and staggered falling slice panels for exit transition.
 - Shared project colors live in `src/lib/projectColors.js` and are re-exported from `src/lib/theme.js`.
+- The Next.js migration prompt suite lives in `NEXTJS_REFACTOR_PROMPTS.md`.
 - The `/scan-effect` route currently uses a stable WebGL shader implementation rather than a direct production WebGPU/TSL port, because the original reference stack was not fully compatible with this local app/runtime combination.
 - Assets for the scan study are stored in `public/scan-effect`.
-- The blog backend lives in `backend/`, uses SQLite, and exposes `/api/*` plus `/uploads/*`.
+- The current blog backend lives in `src/app/api/*`, uses SQLite, and exposes `/api/*` plus `/uploads/*`.
+- The old Python/FastAPI runtime has been removed. The `backend/` directory now only holds local env, SQLite data, and uploaded files used by the Next.js server.
 
 ## Blog Backend
 
-Create your backend env from `backend/.env.example` if you want to override defaults.
+The server reads configuration from:
+
+- `backend/.env`
+- root `.env`
+- root `.env.local`
+
+Current default storage paths:
+
+- database: `backend/data/blog.db`
+- uploads: `backend/uploads`
 
 Default admin credentials in local development:
 
 - username: `admin`
 - password: `change-this-password`
 
-Run the frontend and backend in separate terminals:
+Run the app:
 
 ```bash
 npm run dev
-npm run server
 ```
 
-Vite proxies `/api` and `/uploads` to `http://127.0.0.1:8010`.
+Build for production:
+
+```bash
+npm run build
+npm run start
+```
+
+The Next.js app now serves both page routes and the blog API layer directly.

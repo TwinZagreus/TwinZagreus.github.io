@@ -1,7 +1,9 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "../lib/navigation";
 import { AppButton } from "../components/AppButton";
 import BlogLayout from "../components/BlogLayout";
 import { useAuth } from "../context/AuthContext";

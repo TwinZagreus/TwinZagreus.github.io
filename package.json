@@ -4,18 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "server": "python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8010"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^9.0.0",
     "@react-three/fiber": "^8.17.10",
+    "better-sqlite3": "^9.6.0",
     "framer-motion": "^12.23.12",
     "gsap": "^3.12.7",
+    "next": "^14.2.30",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",

@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "../lib/navigation";
 import { AppButton } from "./AppButton";
 import { useAuth } from "../context/AuthContext";
 

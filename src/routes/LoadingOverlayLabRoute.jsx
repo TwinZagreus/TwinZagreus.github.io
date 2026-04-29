@@ -1,5 +1,7 @@
+"use client";
+
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../lib/navigation";
 import { AppButton } from "../components/AppButton";
 import ThreeLoadingOverlay, { LOADING_OVERLAY_CONFIG } from "../components/ThreeLoadingOverlay";
 

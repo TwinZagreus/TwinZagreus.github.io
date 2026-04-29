@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 const vertexShader = `
@@ -168,6 +168,12 @@ function BackgroundPlane({ isReducedMotion, pointerRef }) {
 export default function HomepageBackground() {
   const isReducedMotion = useReducedMotion();
   const pointerRef = useRef({ x: 0, y: 0 });
+  const canvasHostRef = useRef(null);
+  const [eventSource, setEventSource] = useState(null);
+
+  useEffect(() => {
+    setEventSource(canvasHostRef.current);
+  }, []);
 
   useEffect(() => {
     if (isReducedMotion) {
@@ -196,15 +202,19 @@ export default function HomepageBackground() {
   }, [isReducedMotion]);
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <Canvas
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-        orthographic
-        camera={{ position: [0, 0, 1], zoom: 1 }}
-      >
-        <BackgroundPlane isReducedMotion={isReducedMotion} pointerRef={pointerRef} />
-      </Canvas>
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" ref={canvasHostRef}>
+      {eventSource ? (
+        <Canvas
+          dpr={[1, 1.5]}
+          eventPrefix="client"
+          eventSource={eventSource}
+          gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+          orthographic
+          camera={{ position: [0, 0, 1], zoom: 1 }}
+        >
+          <BackgroundPlane isReducedMotion={isReducedMotion} pointerRef={pointerRef} />
+        </Canvas>
+      ) : null}
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(93,126,110,0.18),_transparent_34%),radial-gradient(circle_at_72%_62%,_rgba(200,255,106,0.08),_transparent_24%),radial-gradient(circle_at_86%_36%,_rgba(255,146,79,0.09),_transparent_22%)] mix-blend-screen" />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,7,6,0.06)_0%,rgba(4,7,6,0.18)_54%,rgba(4,7,6,0.36)_100%)]" />

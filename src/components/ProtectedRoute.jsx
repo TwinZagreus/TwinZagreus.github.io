@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "../lib/navigation";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProtectedRoute({ children }) {
