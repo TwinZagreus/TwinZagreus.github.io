@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx skills *)",
+      "Read(//c/Users/tz/.claude/**)",
+      "Bash(powershell *)",
+      "Bash(where msg *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(where notify-send *)",
+      "Bash(where toast *)",
+      "Bash(where powershell *)"
+    ]
+  },
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "powershell -NoProfile -File .claude/scripts/notify.ps1 -Title \"Claude Code\" -Message \"任务已完成，回来看看吧\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "Notification": [
+    {
+      "matcher": "permission_prompt",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "powershell -NoProfile -File .claude/scripts/notify.ps1 -Title \"Claude Code\" -Message \"需要你的确认才能继续\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}

@@ -340,7 +340,7 @@ const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion
   }, []);
 
   return (
-    <div aria-hidden className="h-screen" ref={canvasHostRef}>
+    <div aria-hidden className="h-screen h-[100dvh]" ref={canvasHostRef}>
       {eventSource ? (
         <Canvas
           dpr={[1.5, 2.5]}
@@ -450,7 +450,7 @@ export default function PerlinContoursRoute() {
 
   return (
     <main
-      className="relative min-h-screen overflow-hidden"
+      className="relative min-h-screen min-h-[100dvh] overflow-hidden"
       style={{ backgroundColor: controls.backgroundColor }}
     >
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(236,233,226,0.3)_100%)]" />

@@ -57,4 +57,3 @@ export function useLocation() {
 export function useParams() {
   return useNextParams();
 }
-

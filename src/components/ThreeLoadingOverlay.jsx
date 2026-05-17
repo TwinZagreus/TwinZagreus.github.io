@@ -35,25 +35,6 @@ export const LOADING_OVERLAY_CONFIG = Object.freeze({
   easing: "power3.in", // 切片下落缓动
 });
 
-function getResponsiveOverlayConfig(baseConfig, width, height) {
-  const isMobile = width < 768;
-  const shortSide = Math.min(width, height);
-  const responsiveTwinLogoSize = Math.round(shortSide * 0.12);
-  const responsiveZLogoSize = Math.round(shortSide * 0.126);
-
-  return {
-    ...baseConfig,
-    twinLogoSize:
-      baseConfig.twinLogoSize === LOADING_OVERLAY_CONFIG.twinLogoSize
-        ? (isMobile ? responsiveTwinLogoSize : baseConfig.twinLogoSize)
-        : baseConfig.twinLogoSize,
-    zLogoSize:
-      baseConfig.zLogoSize === LOADING_OVERLAY_CONFIG.zLogoSize
-        ? (isMobile ? responsiveZLogoSize : baseConfig.zLogoSize)
-        : baseConfig.zLogoSize,
-  };
-}
-
 function ensureAreaKilometerFont() {
   if (typeof window === "undefined" || typeof FontFace === "undefined") {
     return Promise.resolve();
@@ -70,10 +51,48 @@ function ensureAreaKilometerFont() {
   return areaFontPromise;
 }
 
-function getViewport() {
+function getViewportFromContainer(container) {
+  const visualViewport = window.visualViewport;
+  const rect = container?.getBoundingClientRect?.();
+  if (rect && rect.width > 0 && rect.height > 0) {
+    return {
+      height: rect.height,
+      left: rect.left,
+      top: rect.top,
+      visualViewport: visualViewport
+        ? {
+            height: visualViewport.height,
+            offsetLeft: visualViewport.offsetLeft,
+            offsetTop: visualViewport.offsetTop,
+            scale: visualViewport.scale,
+            width: visualViewport.width,
+          }
+        : null,
+      width: rect.width,
+    };
+  }
+
   return {
     height: window.innerHeight,
+    left: 0,
+    top: 0,
+    visualViewport: visualViewport
+      ? {
+          height: visualViewport.height,
+          offsetLeft: visualViewport.offsetLeft,
+          offsetTop: visualViewport.offsetTop,
+          scale: visualViewport.scale,
+          width: visualViewport.width,
+        }
+      : null,
     width: window.innerWidth,
+  };
+}
+
+function worldToScreenPoint(viewport, x, y) {
+  return {
+    x: x + viewport.width / 2,
+    y: viewport.height / 2 - y,
   };
 }
 
@@ -178,6 +197,39 @@ function getCanvasAlphaBounds(canvas) {
   };
 }
 
+function getCanvasAlphaCentroid(canvas) {
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  const { width, height } = canvas;
+  const pixels = context.getImageData(0, 0, width, height).data;
+  let weightSum = 0;
+  let weightedX = 0;
+  let weightedY = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = pixels[(y * width + x) * 4 + 3];
+      if (alpha === 0)
+        continue;
+
+      weightSum += alpha;
+      weightedX += (x + 0.5) * alpha;
+      weightedY += (y + 0.5) * alpha;
+    }
+  }
+
+  if (weightSum === 0) {
+    return {
+      x: width / 2,
+      y: height / 2,
+    };
+  }
+
+  return {
+    x: weightedX / weightSum,
+    y: weightedY / weightSum,
+  };
+}
+
 function getCompositeLogoBounds({
   twinCanvas,
   twinX,
@@ -211,9 +263,14 @@ function getCompositeLogoBounds({
   context.drawImage(zCanvas, zLeft, zTop);
 
   const bounds = getCanvasAlphaBounds(compositeCanvas);
+  const centroid = getCanvasAlphaCentroid(compositeCanvas);
 
   return {
     bottom: maxY - bounds.bottom,
+    centroid: {
+      x: minX + centroid.x,
+      y: maxY - centroid.y,
+    },
     left: minX + bounds.left,
     right: minX + bounds.right,
     top: maxY - bounds.top,
@@ -314,6 +371,10 @@ class LoadingOverlayScene {
     });
   }
 
+  getViewport() {
+    return getViewportFromContainer(this.container);
+  }
+
   buildScene() {
     this.sliceGroup = new THREE.Group();
     this.logoGroup = new THREE.Group();
@@ -335,7 +396,7 @@ class LoadingOverlayScene {
   rebuildSlices() {
     this.clearSlices();
 
-    const viewport = getViewport();
+    const viewport = this.getViewport();
     const sliceWidth = viewport.width / this.activeConfig.sliceCount;
     const skewOffset =
       Math.tan(THREE.MathUtils.degToRad(this.activeConfig.sliceSkewAngle)) * viewport.height;
@@ -438,13 +499,24 @@ class LoadingOverlayScene {
       zX: zMesh.position.x,
       zY: zMesh.position.y,
     });
-    const centerX = (compositeBounds.left + compositeBounds.right) / 2;
-    const centerY = (compositeBounds.top + compositeBounds.bottom) / 2;
+    const centerX = compositeBounds.centroid.x;
+    const centerY = compositeBounds.centroid.y;
 
     twinMesh.position.x -= centerX;
     twinMesh.position.y -= centerY;
     zMesh.position.x -= centerX;
     zMesh.position.y -= centerY;
+
+    const finalCompositeBounds = {
+      bottom: compositeBounds.bottom - centerY,
+      centroid: {
+        x: compositeBounds.centroid.x - centerX,
+        y: compositeBounds.centroid.y - centerY,
+      },
+      left: compositeBounds.left - centerX,
+      right: compositeBounds.right - centerX,
+      top: compositeBounds.top - centerY,
+    };
 
     this.logoGroup.add(twinMesh);
     this.logoGroup.add(zMesh);
@@ -463,6 +535,58 @@ class LoadingOverlayScene {
       zTexture: zCanvas.texture,
       zWidth: zCanvas.canvas.width,
     };
+
+    this.logLogoScreenPosition({
+      compositeBounds: finalCompositeBounds,
+      twinMesh,
+      viewport: this.getViewport(),
+      zMesh,
+    });
+  }
+
+  logLogoScreenPosition({ viewport, twinMesh, zMesh, compositeBounds }) {
+    const twinCenter = worldToScreenPoint(viewport, twinMesh.position.x, twinMesh.position.y);
+    const zCenter = worldToScreenPoint(viewport, zMesh.position.x, zMesh.position.y);
+    const compositeBoundsCenterWorld = {
+      x: (compositeBounds.left + compositeBounds.right) / 2,
+      y: (compositeBounds.top + compositeBounds.bottom) / 2,
+    };
+    const compositeBoundsCenter = worldToScreenPoint(
+      viewport,
+      compositeBoundsCenterWorld.x,
+      compositeBoundsCenterWorld.y,
+    );
+    const compositeCentroid = worldToScreenPoint(
+      viewport,
+      compositeBounds.centroid.x,
+      compositeBounds.centroid.y,
+    );
+    const compositeBoundsScreen = {
+      bottom: viewport.height / 2 - compositeBounds.bottom,
+      left: compositeBounds.left + viewport.width / 2,
+      right: compositeBounds.right + viewport.width / 2,
+      top: viewport.height / 2 - compositeBounds.top,
+    };
+    const configSnapshot = {
+      logoGap: this.activeConfig.logoGap,
+      twinLogoSize: this.activeConfig.twinLogoSize ?? this.activeConfig.logoSize,
+      zLogoSize: this.activeConfig.zLogoSize ?? this.activeConfig.logoSize,
+      zOffsetY: this.activeConfig.zOffsetY,
+    };
+
+    console.groupCollapsed("[ThreeLoadingOverlay] Logo screen position");
+    console.log("viewport", viewport);
+    console.log("visualViewport", viewport.visualViewport);
+    console.table({
+      compositeBoundsCenter,
+      compositeCentroid,
+      twinCenter,
+      zCenter,
+    });
+    console.log("compositeBounds", compositeBounds);
+    console.log("compositeBoundsScreen", compositeBoundsScreen);
+    console.log("configSnapshot", configSnapshot);
+    console.groupEnd();
   }
 
   finish() {
@@ -575,12 +699,9 @@ class LoadingOverlayScene {
   }
 
   handleResize() {
-    const viewport = getViewport();
-    const nextConfig = getResponsiveOverlayConfig(this.config, viewport.width, viewport.height);
-    const isMobile = viewport.width < 768;
-
-    this.activeConfig = nextConfig;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+    const viewport = this.getViewport();
+    this.activeConfig = this.config;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setSize(viewport.width, viewport.height, false);
     this.camera.left = -viewport.width / 2;
     this.camera.right = viewport.width / 2;
@@ -684,7 +805,7 @@ export default function ThreeLoadingOverlay({
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-[60] overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
       ref={containerRef}
     />
   );
