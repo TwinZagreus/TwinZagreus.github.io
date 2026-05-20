@@ -1,4 +1,6 @@
-const BASE_COLOR = "#3B82F6";
+const BASE_COLOR_LIST = ["#C8A24A", "#4F7D5A", "#4A6B8C","#F2555A", "#8C4A6B"];
+
+let BASE_COLOR = BASE_COLOR_LIST[0];
 
 const LIGHT_STOPS = Object.freeze({
   100: 0.96,

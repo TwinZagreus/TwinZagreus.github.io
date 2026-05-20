@@ -1,6 +1,5 @@
-import BlogListRoute from "../../routes/BlogListRoute";
+import BlogListPage from "@/features/blog/pages/BlogListPage";
 
 export default function Page() {
-  return <BlogListRoute />;
+  return <BlogListPage />;
 }
-

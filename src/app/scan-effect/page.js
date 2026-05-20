@@ -1,8 +1,7 @@
 import dynamic from "next/dynamic";
 
-const ScanEffectRoute = dynamic(() => import("../../routes/ScanEffectRoute"), { ssr: false });
+const ScanEffectPage = dynamic(() => import("@/features/visual-labs/pages/ScanEffectPage"), { ssr: false });
 
 export default function Page() {
-  return <ScanEffectRoute />;
+  return <ScanEffectPage />;
 }
-

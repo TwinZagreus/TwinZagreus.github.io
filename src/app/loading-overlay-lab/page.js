@@ -1,8 +1,7 @@
 import dynamic from "next/dynamic";
 
-const LoadingOverlayLabRoute = dynamic(() => import("../../routes/LoadingOverlayLabRoute"), { ssr: false });
+const LoadingOverlayLabPage = dynamic(() => import("@/features/visual-labs/pages/LoadingOverlayLabPage"), { ssr: false });
 
 export default function Page() {
-  return <LoadingOverlayLabRoute />;
+  return <LoadingOverlayLabPage />;
 }
-

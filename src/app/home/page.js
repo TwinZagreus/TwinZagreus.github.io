@@ -1,8 +1,7 @@
 import dynamic from "next/dynamic";
 
-const HomeRoutePage = dynamic(() => import("../../components/HomeRoutePage"), { ssr: false });
+const HomePage = dynamic(() => import("@/features/visual-labs/pages/HomePage"), { ssr: false });
 
 export default function Page() {
-  return <HomeRoutePage />;
+  return <HomePage />;
 }
-

@@ -1,6 +1,5 @@
-import BlogPostRoute from "../../../routes/BlogPostRoute";
+import BlogPostPage from "@/features/blog/pages/BlogPostPage";
 
 export default function Page() {
-  return <BlogPostRoute />;
+  return <BlogPostPage />;
 }
-

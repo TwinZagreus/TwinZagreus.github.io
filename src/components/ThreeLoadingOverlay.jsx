@@ -13,6 +13,8 @@ export const LOADING_OVERLAY_CONFIG = Object.freeze({
   logoText: "TwinZ", // Logo 文案
   logoColor: PROJECT_COLOR_MAP.ink950, // Twin 文字颜色
   animatedLetterColor: PROJECT_COLOR_MAP.coral, // Z 红框颜色
+  zAssetUrl: "/img/final-single.svg", // Z 使用的 SVG 动效资源
+  zAssetHeightScale: 1.12, // SVG Z 相对 zLogoSize 的高度比例
   logoSize: 104, // 通用字号兜底值
   twinLogoSize: 104, // Twin 的字号
   zLogoSize: 90, // Z 的字号
@@ -346,6 +348,9 @@ class LoadingOverlayScene {
     this.camera = new THREE.OrthographicCamera();
     this.twinClipPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 999999);
     this.logoAssets = null;
+    this.zAssetSize = null;
+    this.zAssetUrl = null;
+    this.zDomImage = null;
     this.slices = [];
     this.sliceGeometries = [];
     this.sliceMaterials = [];
@@ -358,8 +363,16 @@ class LoadingOverlayScene {
     this.render = this.render.bind(this);
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.localClippingEnabled = true;
+    this.container.style.backgroundColor = this.activeConfig.backgroundColor;
+    this.renderer.domElement.style.position = "absolute";
+    this.renderer.domElement.style.inset = "0";
+    this.renderer.domElement.style.width = "100%";
+    this.renderer.domElement.style.height = "100%";
+    this.renderer.domElement.style.display = "block";
+    this.renderer.domElement.style.zIndex = "1";
     this.container.appendChild(this.renderer.domElement);
 
+    this.createZDomAsset();
     this.buildScene();
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
@@ -384,6 +397,50 @@ class LoadingOverlayScene {
     this.rebuildLogo();
   }
 
+  createZDomAsset() {
+    const url = this.activeConfig.zAssetUrl;
+    if (!url)
+      return;
+
+    this.zAssetUrl = url;
+    this.zAssetSize = {
+      height: 602,
+      width: 504.194,
+    };
+
+    const image = document.createElement("img");
+    image.alt = "";
+    image.decoding = "async";
+    image.draggable = false;
+    image.src = url;
+    image.style.position = "absolute";
+    image.style.left = "0";
+    image.style.top = "0";
+    image.style.zIndex = "2";
+    image.style.pointerEvents = "none";
+    image.style.transformOrigin = "center center";
+    image.style.willChange = "opacity, transform";
+    image.style.opacity = "0";
+
+    image.onload = () => {
+      if (this.isDisposed || this.zAssetUrl !== url)
+        return;
+
+      this.zAssetSize = {
+        height: image.naturalHeight || 602,
+        width: image.naturalWidth || 504.194,
+      };
+      this.rebuildLogo();
+    };
+    image.onerror = (error) => {
+      console.warn("[ThreeLoadingOverlay] Failed to load Z SVG asset", error);
+    };
+
+    this.zDomImage = image;
+    this.container.appendChild(image);
+    console.info("[ThreeLoadingOverlay] Z SVG DOM asset mounted", url);
+  }
+
   clearSlices() {
     this.slices.forEach((slice) => this.sliceGroup.remove(slice));
     this.sliceGeometries.forEach((geometry) => geometry.dispose());
@@ -398,6 +455,7 @@ class LoadingOverlayScene {
 
     const viewport = this.getViewport();
     const sliceWidth = viewport.width / this.activeConfig.sliceCount;
+    const verticalOverscan = 8;
     const skewOffset =
       Math.tan(THREE.MathUtils.degToRad(this.activeConfig.sliceSkewAngle)) * viewport.height;
     const overscan = Math.abs(skewOffset) + 2;
@@ -407,10 +465,10 @@ class LoadingOverlayScene {
       const x1 = x0 + sliceWidth;
       const shape = new THREE.Shape();
 
-      shape.moveTo(x0 - overscan, viewport.height / 2);
-      shape.lineTo(x1 + overscan, viewport.height / 2);
-      shape.lineTo(x1 + overscan - skewOffset, -viewport.height / 2);
-      shape.lineTo(x0 - overscan - skewOffset, -viewport.height / 2);
+      shape.moveTo(x0 - overscan, viewport.height / 2 + verticalOverscan);
+      shape.lineTo(x1 + overscan, viewport.height / 2 + verticalOverscan);
+      shape.lineTo(x1 + overscan - skewOffset, -viewport.height / 2 - verticalOverscan);
+      shape.lineTo(x0 - overscan - skewOffset, -viewport.height / 2 - verticalOverscan);
       shape.closePath();
 
       const geometry = new THREE.ShapeGeometry(shape);
@@ -452,15 +510,38 @@ class LoadingOverlayScene {
       paddingYScale: this.activeConfig.twinPaddingYScale,
       text: baseText,
     });
-    const zCanvas = makeKnockoutBadgeCanvas({
-      badgeColor: this.activeConfig.animatedLetterColor,
-      fontSize: zFontSize,
-      paddingXScale: this.activeConfig.zPaddingXScale,
-      paddingTopScale: this.activeConfig.zPaddingTopScale,
-      paddingBottomScale: this.activeConfig.zPaddingBottomScale,
-      radiusScale: this.activeConfig.zCornerRadiusScale,
-      text: animatedText,
-    });
+    const useZDomAsset = Boolean(this.activeConfig.zAssetUrl && this.zAssetSize);
+    let zCanvas;
+    if (useZDomAsset) {
+      const zHeight = zFontSize * (this.activeConfig.zAssetHeightScale ?? 1);
+      const zWidth = zHeight * (this.zAssetSize.width / this.zAssetSize.height);
+      const texture = new THREE.CanvasTexture(makeLayoutBoundsCanvas(zWidth, zHeight));
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+
+      zCanvas = {
+        bounds: {
+          bottom: zHeight,
+          left: 0,
+          right: zWidth,
+          top: 0,
+        },
+        canvas: makeLayoutBoundsCanvas(zWidth, zHeight),
+        isSvgAsset: true,
+        texture,
+      };
+    } else {
+      zCanvas = makeKnockoutBadgeCanvas({
+        badgeColor: this.activeConfig.animatedLetterColor,
+        fontSize: zFontSize,
+        paddingXScale: this.activeConfig.zPaddingXScale,
+        paddingTopScale: this.activeConfig.zPaddingTopScale,
+        paddingBottomScale: this.activeConfig.zPaddingBottomScale,
+        radiusScale: this.activeConfig.zCornerRadiusScale,
+        text: animatedText,
+      });
+    }
 
     const twinMaterial = new THREE.MeshBasicMaterial({
       clippingPlanes: [this.twinClipPlane],
@@ -471,7 +552,7 @@ class LoadingOverlayScene {
     const zMaterial = new THREE.MeshBasicMaterial({
       map: zCanvas.texture,
       transparent: true,
-      opacity: 1,
+      opacity: zCanvas.isSvgAsset ? 0 : 1,
     });
 
     const twinMesh = new THREE.Mesh(
@@ -530,11 +611,13 @@ class LoadingOverlayScene {
       twinTexture: twinCanvas.texture,
       twinWidth: twinCanvas.canvas.width,
       zStartX: zMesh.position.x,
+      zUsesSvgAsset: Boolean(zCanvas.isSvgAsset),
       zMesh,
       zMaterial,
       zTexture: zCanvas.texture,
       zWidth: zCanvas.canvas.width,
     };
+    this.syncZDomImage();
 
     this.logLogoScreenPosition({
       compositeBounds: finalCompositeBounds,
@@ -589,11 +672,36 @@ class LoadingOverlayScene {
     console.groupEnd();
   }
 
+  syncZDomImage() {
+    if (!this.zDomImage)
+      return;
+
+    if (!this.logoAssets?.zUsesSvgAsset) {
+      this.zDomImage.style.opacity = "0";
+      return;
+    }
+
+    const viewport = this.getViewport();
+    const { zMesh, zWidth } = this.logoAssets;
+    const zHeight = zMesh.geometry.parameters.height;
+    const left = viewport.width / 2 + zMesh.position.x - zWidth / 2;
+    const top = viewport.height / 2 - zMesh.position.y - zHeight / 2;
+
+    this.zDomImage.style.width = `${zWidth}px`;
+    this.zDomImage.style.height = `${zHeight}px`;
+    this.zDomImage.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+
+    if (!this.isExiting && this.zDomImage.style.opacity === "0") {
+      this.zDomImage.style.opacity = "1";
+    }
+  }
+
   finish() {
     if (this.isDisposed || this.isExiting)
       return;
 
     this.isExiting = true;
+    this.container.style.backgroundColor = "transparent";
     if (!this.logoAssets) {
       this.dispose();
       this.onFinish();
@@ -696,6 +804,18 @@ class LoadingOverlayScene {
       },
       slicesEndAt + twinPhaseDuration,
     );
+
+    if (this.zDomImage && this.logoAssets.zUsesSvgAsset) {
+      this.exitTimeline.to(
+        this.zDomImage,
+        {
+          duration: zPhaseDuration,
+          ease: "power2.out",
+          opacity: 0,
+        },
+        slicesEndAt + twinPhaseDuration,
+      );
+    }
   }
 
   handleResize() {
@@ -723,6 +843,9 @@ class LoadingOverlayScene {
     if (this.logoAssets) {
       const badgeLeftEdge = this.logoAssets.zMesh.position.x - this.logoAssets.zWidth / 2;
       this.twinClipPlane.constant = badgeLeftEdge;
+      if (this.logoAssets.zUsesSvgAsset) {
+        this.syncZDomImage();
+      }
     }
 
     this.rafId = window.requestAnimationFrame(this.render);
@@ -751,6 +874,9 @@ class LoadingOverlayScene {
       this.logoAssets.zTexture.dispose();
       this.logoAssets = null;
     }
+
+    this.zDomImage?.remove();
+    this.zDomImage = null;
 
     this.scene.clear();
     this.renderer.dispose();
@@ -809,4 +935,16 @@ export default function ThreeLoadingOverlay({
       ref={containerRef}
     />
   );
+}
+
+function makeLayoutBoundsCanvas(width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width));
+  canvas.height = Math.max(1, Math.round(height));
+
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#000000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  return canvas;
 }
