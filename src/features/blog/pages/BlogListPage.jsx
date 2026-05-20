@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { Link } from "@/lib/navigation";
 import { AppButton } from "@/components/AppButton";
 import BlogLayout from "@/components/BlogLayout";
-import { useAuth } from "@/context/AuthContext";
+import { useProjectTheme } from "@/context/ProjectThemeContext";
 import { listAdminPosts, listPublicPosts } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { formatPublishDate } from "@/lib/blog";
 
 function PostCard({ post, showStatus }) {
@@ -70,6 +71,7 @@ function PostCard({ post, showStatus }) {
 
 export default function BlogListPage() {
   const { isAuthenticated } = useAuth();
+  const { colorMap } = useProjectTheme();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState([]);
@@ -114,7 +116,8 @@ export default function BlogListPage() {
               </h1>
             </div>
             <p className="max-w-md text-sm leading-7 text-[#696456]">
-              鍏紑璇昏€呯湅鍒板凡鍙戝竷鍐呭銆傜櫥褰曞悗杩欓噷浼氬垏鎹㈡垚鍏ㄩ噺鍒楄〃锛岃崏绋垮拰宸插彂甯冪姸鎬侀兘鑳界洿鎺ョ鐞嗐€?            </p>
+              Browse public posts, then sign in to unlock the editor workflow for drafts, covers, Markdown content, and publishing controls.
+            </p>
           </div>
 
           {error ? <div className="mt-6 rounded-3xl bg-[#f4ddd6] px-5 py-4 text-sm text-[#834638]">{error}</div> : null}
@@ -140,20 +143,20 @@ export default function BlogListPage() {
           <section className="rounded-[30px] border border-[#ddd7cc] bg-[#fcfbf8] p-6 shadow-[0_18px_40px_rgba(73,58,36,0.06)]">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8c8577]">System Notes</div>
             <div className="mt-4 space-y-4 text-sm leading-7 text-[#676255]">
-              <p>鍚庣鏄?Next.js Route Handlers锛屽唴瀹瑰瓨 SQLite锛屾湰鍦颁笂浼犵洿鎺ヨ惤纾佺洏銆?/p>
-              <p>鐧诲綍鍏ュ彛涓嶆槸鍗曠嫭鍚庡彴璺敱锛岃€屾槸鍏ㄥ眬寮圭獥銆傝繖鏍锋祻瑙堟祦鍜岀鐞嗘祦鍦ㄥ悓涓€濂楅〉闈㈤噷銆?/p>
+              <p>Posts are served by Next.js Route Handlers with SQLite storage.</p>
+              <p>Anonymous visitors can read published entries. After login, editor controls appear in place.</p>
             </div>
           </section>
 
-          <section className="rounded-[30px] border border-[#ddd7cc] bg-[#4f6550] p-6 text-white shadow-[0_22px_40px_rgba(62,74,58,0.22)]">
+          <section className="rounded-[30px] border border-[#ddd7cc] p-6 text-white shadow-[0_22px_40px_rgba(62,74,58,0.22)]" style={{ backgroundColor: colorMap.coral }}>
             <div className="text-[10px] uppercase tracking-[0.34em] text-white/65">Current Mode</div>
             <div className="mt-4 text-2xl uppercase tracking-[0.08em]">
               {isAuthenticated ? "Editor" : "Reader"}
             </div>
             <p className="mt-4 text-sm leading-7 text-white/78">
               {isAuthenticated
-                ? "褰撳墠鍙互鏂板缓銆佷慨鏀广€佸垹闄ゆ枃绔狅紝涔熻兘鏌ョ湅鑽夌銆?
-                : "褰撳墠鍙睍绀哄叕寮€鏂囩珷銆傜櫥褰曞悗鍚岄〉鍒囨崲鎴愮鐞嗚瑙掋€?}
+                ? "Editor mode is active. You can create, edit, delete, and manage post status."
+                : "Reader mode is active. Published posts are visible, while editing tools stay locked."}
             </p>
           </section>
         </aside>

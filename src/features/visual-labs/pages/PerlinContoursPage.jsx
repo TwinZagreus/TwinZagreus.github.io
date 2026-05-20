@@ -9,11 +9,23 @@ import { AppButton } from "@/components/AppButton";
 import MouseRevealLayer from "@/components/MouseRevealLayer";
 import ThreeLoadingOverlay, { LOADING_OVERLAY_CONFIG } from "@/components/ThreeLoadingOverlay";
 import { useAuth } from "@/context/AuthContext";
-import { PROJECT_COLOR_MAP, PROJECT_COLORS, PROJECT_COLOR_SEQUENCE } from "@/lib/theme";
+import { useProjectTheme } from "@/context/ProjectThemeContext";
+import { PROJECT_COLOR_MAP } from "@/lib/theme";
 
-const DEFAULT_CONTROLS = {
-  backgroundColor: PROJECT_COLOR_MAP.coral100,
-  lineColor: PROJECT_COLOR_MAP.neutral900,
+function makeDefaultControls(colorMap = PROJECT_COLOR_MAP) {
+  return {
+    backgroundColor: colorMap.coral100,
+    lineColor: colorMap.neutral900,
+    speed: 1,
+    sharpness: 0.36,
+    curvature: 0,
+    thickness: 2,
+  };
+}
+
+const DEFAULT_CONTROLS = makeDefaultControls();
+
+const TUNING_DEFAULTS = {
   speed: 1,
   sharpness: 0.36,
   curvature: 0,
@@ -221,8 +233,8 @@ function ContourField({ controlsRef, isReducedMotion }) {
   const materialRef = useRef(null);
   const pointerRef = useRef(new THREE.Vector2(0, 0));
   const pointerTargetRef = useRef(new THREE.Vector2(0, 0));
-  const backgroundColorTargetRef = useRef(new THREE.Color(DEFAULT_CONTROLS.backgroundColor));
-  const lineColorTargetRef = useRef(new THREE.Color(DEFAULT_CONTROLS.lineColor));
+  const backgroundColorTargetRef = useRef(new THREE.Color(controlsRef.current.backgroundColor));
+  const lineColorTargetRef = useRef(new THREE.Color(controlsRef.current.lineColor));
   const uniformsRef = useRef(null);
   const { size } = useThree();
 
@@ -360,21 +372,38 @@ const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion
 export default function PerlinContoursPage() {
   const isReducedMotion = useReducedMotion();
   const { isAuthenticated, openLoginModal } = useAuth();
+  const { colorMap } = useProjectTheme();
+  const themedDefaults = useMemo(() => makeDefaultControls(colorMap), [colorMap]);
   const [isLoadingReady, setIsLoadingReady] = useState(false);
   const [isRevealReady, setIsRevealReady] = useState(false);
-  const [controls, setControls] = useState(DEFAULT_CONTROLS);
+  const [controls, setControls] = useState(themedDefaults);
   const [imageControls, setImageControls] = useState(DEFAULT_IMAGE_CONTROLS);
-  const controlsRef = useRef(DEFAULT_CONTROLS);
+  const controlsRef = useRef(themedDefaults);
   const imageControlsRef = useRef(DEFAULT_IMAGE_CONTROLS);
   const loadingTimerRef = useRef(null);
   const loadingFallbackRef = useRef(null);
   const loadingConfig = useMemo(
     () => ({
       ...LOADING_OVERLAY_CONFIG,
+      animatedLetterColor: colorMap.coral,
+      backgroundColor: colorMap.coral100,
+      logoColor: colorMap.ink950,
       sliceFallDistance: Math.round(Math.max(window.innerHeight * 1.18, 960)),
     }),
-    [],
+    [colorMap],
   );
+
+  useEffect(() => {
+    setControls((current) => {
+      const next = {
+        ...current,
+        backgroundColor: themedDefaults.backgroundColor,
+        lineColor: themedDefaults.lineColor,
+      };
+      controlsRef.current = next;
+      return next;
+    });
+  }, [themedDefaults]);
 
   useEffect(() => {
     let cancelled = false;
@@ -430,8 +459,12 @@ export default function PerlinContoursPage() {
   };
 
   const resetControls = () => {
-    controlsRef.current = DEFAULT_CONTROLS;
-    setControls(DEFAULT_CONTROLS);
+    const next = {
+      ...themedDefaults,
+      ...TUNING_DEFAULTS,
+    };
+    controlsRef.current = next;
+    setControls(next);
   };
 
   const updateImageControl = (key, value) => {

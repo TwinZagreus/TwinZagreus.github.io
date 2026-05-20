@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useProjectTheme } from "../context/ProjectThemeContext";
 import { useLocation, useNavigate } from "../lib/navigation";
 import { AppButton } from "./AppButton";
-import { useAuth } from "../context/AuthContext";
 
 export default function LoginModal() {
   const {
@@ -13,6 +14,7 @@ export default function LoginModal() {
     login,
     loginModalOpen,
   } = useAuth();
+  const { colorMap } = useProjectTheme();
   const [form, setForm] = useState({ password: "", username: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,39 +43,44 @@ export default function LoginModal() {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#161712]/35 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-[28px] border border-[#d8d2c8] bg-[#fbfaf6] p-6 text-[#4b4a43] shadow-[0_24px_80px_rgba(53,43,29,0.2)]">
+      <div
+        className="w-full max-w-md rounded-[28px] border bg-[#fbfaf6] p-6 text-[#4b4a43] shadow-[0_24px_80px_rgba(53,43,29,0.2)]"
+        style={{ borderColor: colorMap.coral400 }}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#8b8475]">Administrator</div>
-            <h2 className="mt-3 text-3xl uppercase tracking-[0.08em] text-[#45453f]">Blog Login</h2>
+            <div className="text-[10px] uppercase tracking-[0.34em]" style={{ color: colorMap.neutral900 }}>Administrator</div>
+            <h2 className="mt-3 text-3xl uppercase tracking-[0.08em]" style={{ color: colorMap.ink800 }}>Blog Login</h2>
             <p className="mt-2 text-sm leading-6 text-[#6d685c]">
               登录后才能新建、编辑、删除博客。未登录状态默认只读。
             </p>
           </div>
-          <AppButton onClick={closeLoginModal} sx={{ px: 1.5, py: 0.5, letterSpacing: "0.3em", color: "#6a665c" }} type="button">
+          <AppButton onClick={closeLoginModal} sx={{ px: 1.5, py: 0.5, letterSpacing: "0.3em" }} type="button">
             Close
           </AppButton>
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={submit}>
           <label className="block">
-            <span className="mb-2 block text-[11px] uppercase tracking-[0.28em] text-[#787365]">Username / 用户名</span>
+            <span className="mb-2 block text-[11px] uppercase tracking-[0.28em]" style={{ color: colorMap.neutral900 }}>Username / 用户名</span>
             <input
               autoComplete="username"
-              className="w-full rounded-2xl border border-[#d9d4ca] bg-white px-4 py-3 text-sm text-[#45453f] outline-none transition focus:border-[#8a9680]"
+              className="w-full rounded-2xl border bg-white px-4 py-3 text-sm text-[#45453f] outline-none transition"
               disabled={isSubmitting || isCheckingSession}
               onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+              style={{ borderColor: colorMap.coral300 }}
               value={form.username}
             />
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-[11px] uppercase tracking-[0.28em] text-[#787365]">Password / 密码</span>
+            <span className="mb-2 block text-[11px] uppercase tracking-[0.28em]" style={{ color: colorMap.neutral900 }}>Password / 密码</span>
             <input
               autoComplete="current-password"
-              className="w-full rounded-2xl border border-[#d9d4ca] bg-white px-4 py-3 text-sm text-[#45453f] outline-none transition focus:border-[#8a9680]"
+              className="w-full rounded-2xl border bg-white px-4 py-3 text-sm text-[#45453f] outline-none transition"
               disabled={isSubmitting || isCheckingSession}
               onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+              style={{ borderColor: colorMap.coral300 }}
               type="password"
               value={form.password}
             />
@@ -85,14 +92,14 @@ export default function LoginModal() {
             disabled={isSubmitting || isCheckingSession}
             fullWidth
             sx={{
+              "&.Mui-disabled": { bgcolor: colorMap.neutral300, borderColor: colorMap.neutral300, color: "#ffffff" },
+              "&:hover": { bgcolor: colorMap.ink700, borderColor: colorMap.ink700 },
+              bgcolor: colorMap.coral,
+              borderColor: colorMap.coral,
               borderRadius: "16px",
-              py: 1.5,
-              fontSize: "11px",
-              bgcolor: "#4e6550",
-              borderColor: "#4e6550",
               color: "#ffffff",
-              "&:hover": { bgcolor: "#425545", borderColor: "#425545" },
-              "&.Mui-disabled": { bgcolor: "#93a08e", borderColor: "#93a08e", color: "#ffffff" },
+              fontSize: "11px",
+              py: 1.5,
             }}
             type="submit"
           >

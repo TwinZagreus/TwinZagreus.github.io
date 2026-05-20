@@ -66,8 +66,8 @@ export default function LoadingOverlayLabPage() {
               TwinZ Mark
             </h1>
             <p className="mt-5 text-sm leading-7 text-[#5f6874]">
-              杩欎釜璺敱浼氫竴鐩翠繚鎸?Loading 鍒濆鎬侊紝涓嶈Е鍙戦€€鍑恒€備綘鍙互鍦ㄥ彸渚у疄鏃惰皟 `Twin`銆乣Z`
-              鐨勫瓧鍙峰拰涓よ€呴棿璺濄€?            </p>
+              Keep the loading overlay visible here while tuning the Twin/Z mark size, spacing, and transition behavior.
+            </p>
           </div>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function LoadingOverlayLabPage() {
             <div>
               <div className="text-[10px] uppercase tracking-[0.34em] text-[#7d8793]">Static Loading Preview</div>
               <div className="mt-2 text-sm leading-6 text-[#6a7380]">
-                璋冩暣澶у皬鍜岄棿璺濓紝纭鍒濆鏋勫浘銆傝繖涓〉闈笉浼氳嚜鍔ㄦ挱鏀鹃€€鍑哄姩鐢汇€?              </div>
+                闁荤姴顑呴崯顖炲汲閿濆棗绶炵憸宥夋儍椤掑嫬妞界€光偓閸曨剨绱甸柣鐘靛劋缁绘劗妲愬┑鍫熷厹妞ゆ梹顑欓崥鍥煕閹烘挾绠撴い顐ｅ姍瀵悂宕熼锝囶洯闂侀潧妫楅崐鐣屾崲閺嶃劎鈻旀い蹇撶墑閳ь剙顦靛Λ鍐綖椤撶姷鎲规繛鏉戝悑娣囨椽宕靛鍫濈闁靛闄勭亸锟犳煛閳ь剚銈ｉ崘锝呬壕闁逞屽墴瀹曟瑩宕崟顐嶆鏌ｉ姀锛勬菇闁?              </div>
             </div>
             <AppButton
               onClick={reset}

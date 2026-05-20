@@ -1,6 +1,14 @@
-const BASE_COLOR_LIST = ["#C8A24A", "#4F7D5A", "#4A6B8C","#F2555A", "#8C4A6B"];
 
-let BASE_COLOR = BASE_COLOR_LIST[0];
+export const BASE_COLOR_LIST = Object.freeze([
+  { index: 0, title: "T", context: "TREASURE", color: "#C8A24A" },
+  { index: 1, title: "W", context: "WISP", color: "#4F7D5A" },
+  { index: 2, title: "I", context: "INLET", color: "#4A6B8C" },
+  { index: 3, title: "N", context: "NIRVANA", color: "#F2555A" },
+  { index: 4, title: "Z", context: "ZONE", color: "#8C4A6B" },
+]);
+
+export const MAIN_BACKGROUND_COLOR = "#F2EFE7";
+const BASE_COLOR = BASE_COLOR_LIST[4].color;
 
 const LIGHT_STOPS = Object.freeze({
   100: 0.96,
@@ -157,7 +165,9 @@ function makeHexFromHsl(h, s, l) {
 function freezeEntries(record) {
   return Object.freeze(
     Object.fromEntries(
-      Object.entries(record).sort(([left], [right]) => Number(left) - Number(right)),
+      Object.entries(record).sort(
+        ([left], [right]) => Number(left) - Number(right),
+      ),
     ),
   );
 }
@@ -194,69 +204,84 @@ function buildPalette({ key, label, hueShift }, baseHsl) {
   });
 }
 
-const baseHsl = rgbToHsl(hexToRgb(BASE_COLOR));
+function buildColorMap(projectColorGroups) {
+  const [coralPalette, limePalette, mintPalette, azurePalette, orchidPalette] =
+    projectColorGroups;
 
-export const PROJECT_COLOR_GROUPS = Object.freeze(
-  PALETTE_SPECS.map((spec) => buildPalette(spec, baseHsl)),
-);
+  return Object.freeze({
+    coral: coralPalette.base,
+    lime: limePalette.base,
+    mint: mintPalette.base,
+    azure: azurePalette.base,
+    orchid: orchidPalette.base,
 
-const [
-  coralPalette,
-  limePalette,
-  mintPalette,
-  azurePalette,
-  orchidPalette,
-] = PROJECT_COLOR_GROUPS;
+    coral100: coralPalette.light[100],
+    coral200: coralPalette.light[200],
+    coral300: coralPalette.light[300],
+    coral400: coralPalette.light[400],
+    coral500: coralPalette.light[500],
+    coral600: coralPalette.light[600],
+    coral700: coralPalette.light[700],
+    coral800: coralPalette.light[800],
+    coral900: coralPalette.light[900],
+    coral950: coralPalette.light[950],
 
-export const PROJECT_COLOR_MAP = Object.freeze({
-  coral: coralPalette.base,
-  lime: limePalette.base,
-  mint: mintPalette.base,
-  azure: azurePalette.base,
-  orchid: orchidPalette.base,
+    ink950: coralPalette.dark[950],
+    ink900: coralPalette.dark[900],
+    ink800: coralPalette.dark[800],
+    ink700: coralPalette.dark[700],
+    ink600: coralPalette.dark[600],
+    ink500: coralPalette.dark[500],
+    ink400: coralPalette.dark[400],
+    ink300: coralPalette.dark[300],
+    ink200: coralPalette.dark[200],
 
-  coral100: coralPalette.light[100],
-  coral200: coralPalette.light[200],
-  coral300: coralPalette.light[300],
-  coral400: coralPalette.light[400],
-  coral500: coralPalette.light[500],
-  coral600: coralPalette.light[600],
-  coral700: coralPalette.light[700],
-  coral800: coralPalette.light[800],
-  coral900: coralPalette.light[900],
-  coral950: coralPalette.light[950],
+    neutral900: coralPalette.mid[900],
+    neutral800: coralPalette.mid[800],
+    neutral700: coralPalette.mid[700],
+    neutral600: coralPalette.mid[600],
+    neutral500: coralPalette.mid[500],
+    neutral400: coralPalette.mid[400],
+    neutral300: coralPalette.mid[300],
+    neutral200: coralPalette.mid[200],
+    neutral100: coralPalette.mid[100],
+  });
+}
 
-  ink950: coralPalette.dark[950],
-  ink900: coralPalette.dark[900],
-  ink800: coralPalette.dark[800],
-  ink700: coralPalette.dark[700],
-  ink600: coralPalette.dark[600],
-  ink500: coralPalette.dark[500],
-  ink400: coralPalette.dark[400],
-  ink300: coralPalette.dark[300],
-  ink200: coralPalette.dark[200],
+function buildColorSequence(projectColorGroups) {
+  return Object.freeze([
+    ...projectColorGroups.flatMap((palette) => [
+      palette.base,
+      ...Object.values(palette.light),
+      ...Object.values(palette.dark),
+      ...Object.values(palette.mid),
+    ]),
+  ]);
+}
 
-  neutral900: coralPalette.mid[900],
-  neutral800: coralPalette.mid[800],
-  neutral700: coralPalette.mid[700],
-  neutral600: coralPalette.mid[600],
-  neutral500: coralPalette.mid[500],
-  neutral400: coralPalette.mid[400],
-  neutral300: coralPalette.mid[300],
-  neutral200: coralPalette.mid[200],
-  neutral100: coralPalette.mid[100],
-});
+export function buildProjectColorTheme(baseColor = BASE_COLOR) {
+  const baseHsl = rgbToHsl(hexToRgb(baseColor));
+  const groups = Object.freeze(
+    PALETTE_SPECS.map((spec) => buildPalette(spec, baseHsl)),
+  );
+  const map = buildColorMap(groups);
+  const sequence = buildColorSequence(groups);
+  const colors = Object.freeze([...new Set(sequence)]);
 
-export const PROJECT_COLOR_SEQUENCE = Object.freeze([
-  ...PROJECT_COLOR_GROUPS.flatMap((palette) => [
-    palette.base,
-    ...Object.values(palette.light),
-    ...Object.values(palette.dark),
-    ...Object.values(palette.mid),
-  ]),
-]);
+  return Object.freeze({
+    colors,
+    groups,
+    map,
+    sequence,
+  });
+}
 
-export const PROJECT_COLORS = Object.freeze([...new Set(PROJECT_COLOR_SEQUENCE)]);
+const defaultTheme = buildProjectColorTheme(BASE_COLOR);
+
+export const PROJECT_COLOR_GROUPS = defaultTheme.groups;
+export const PROJECT_COLOR_MAP = defaultTheme.map;
+export const PROJECT_COLOR_SEQUENCE = defaultTheme.sequence;
+export const PROJECT_COLORS = defaultTheme.colors;
 
 export function isProjectColor(color) {
   return PROJECT_COLORS.includes(String(color).toUpperCase());
