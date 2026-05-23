@@ -754,6 +754,14 @@ class LoadingOverlayScene {
       );
     });
 
+    this.exitTimeline.set(
+      this.slices,
+      {
+        visible: false,
+      },
+      slicesEndAt + 0.02,
+    );
+
     this.exitTimeline.to(
       this.logoAssets.twinMesh.position,
       {
@@ -887,6 +895,7 @@ class LoadingOverlayScene {
 export default function ThreeLoadingOverlay({
   config = LOADING_OVERLAY_CONFIG,
   isReady,
+  onMounted,
   onExited,
 }) {
   const containerRef = useRef(null);
@@ -913,12 +922,13 @@ export default function ThreeLoadingOverlay({
         onExited?.();
       },
     });
+    onMounted?.();
 
     return () => {
       overlayRef.current?.dispose();
       overlayRef.current = null;
     };
-  }, [mergedConfig, onExited]);
+  }, [mergedConfig, onExited, onMounted]);
 
   useEffect(() => {
     if (!isReady)
@@ -932,6 +942,7 @@ export default function ThreeLoadingOverlay({
   return (
     <div
       className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
+      data-initial-loading-overlay="true"
       ref={containerRef}
     />
   );

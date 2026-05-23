@@ -21,12 +21,14 @@ function normalizeThemeIndex(value) {
 
 export function ProjectThemeProvider({ children }) {
   const [themeIndex, setThemeIndexState] = useState(DEFAULT_THEME_INDEX);
+  const [isThemeReady, setIsThemeReady] = useState(false);
 
   useEffect(() => {
     const storedIndex = window.localStorage.getItem(STORAGE_KEY);
     if (storedIndex !== null) {
       setThemeIndexState(normalizeThemeIndex(storedIndex));
     }
+    setIsThemeReady(true);
   }, []);
 
   const themeOption = useMemo(
@@ -57,11 +59,12 @@ export function ProjectThemeProvider({ children }) {
       colorMap: projectTheme.map,
       colorSequence: projectTheme.sequence,
       colors: projectTheme.colors,
+      isThemeReady,
       setThemeIndex,
       themeIndex,
       themeOption,
     }),
-    [projectTheme, themeIndex, themeOption],
+    [isThemeReady, projectTheme, themeIndex, themeOption],
   );
 
   return (

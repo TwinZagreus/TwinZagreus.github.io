@@ -4,6 +4,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { AuthProvider } from "../context/AuthContext";
 import { ProjectThemeProvider } from "../context/ProjectThemeContext";
+import InitialLoadingGate from "./InitialLoadingGate";
 import LoginModal from "./LoginModal";
 import ThemeSetting from "./ThemeSetting";
 
@@ -20,9 +21,10 @@ export default function ClientProviders({ children }) {
       <CssBaseline />
       <ProjectThemeProvider>
         <AuthProvider>
-          {children}
-          <LoginModal />
-          <ThemeSetting />
+          <InitialLoadingGate deferredControls={<ThemeSetting />}>
+            {children}
+            <LoginModal />
+          </InitialLoadingGate>
         </AuthProvider>
       </ProjectThemeProvider>
     </ThemeProvider>
