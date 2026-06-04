@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 
 const RouteTransitionContext = createContext(null);
+const SLASH_SKEW_DEGREES = -8;
 
 export function RouteTransitionProvider({ children }) {
   const pathname = usePathname();
@@ -79,21 +80,30 @@ export function RouteTransitionProvider({ children }) {
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
           >
             <motion.div
-              className="absolute inset-y-0 left-0 w-[120vw]"
-              initial={{ x: "-106%", skewX: -12 }}
-              animate={{ x: "-8%", skewX: -12 }}
-              exit={{ x: "102%", skewX: -12 }}
+              className="absolute -inset-x-[34vw] -inset-y-[60vh]"
+              initial={{
+                skewY: SLASH_SKEW_DEGREES,
+                y: "-130%",
+              }}
+              animate={{
+                skewY: SLASH_SKEW_DEGREES,
+                y: "0%",
+              }}
+              exit={{
+                skewY: SLASH_SKEW_DEGREES,
+                y: "130%",
+              }}
               transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                background: `linear-gradient(90deg, ${alpha(colorMap.coral100, 0)} 0%, ${alpha(colorMap.coral, 0.74)} 34%, ${alpha(colorMap.ink950, 0.82)} 100%)`,
-                transformOrigin: "50% 100%",
+                background: `linear-gradient(0deg, ${alpha(colorMap.coral100, 0)} 0%, ${alpha(colorMap.coral, 0.74)} 34%, ${alpha(colorMap.ink950, 0.86)} 100%)`,
+                transformOrigin: "50% 50%",
               }}
             />
             <motion.div
               className="absolute left-5 top-5 border-t pt-4 text-[10px] uppercase leading-relaxed tracking-[0.34em] sm:left-7"
-              initial={{ opacity: 0, x: -18 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 18 }}
+              initial={{ opacity: 0, y: -18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               style={{ borderColor: alpha(colorMap.coral100, 0.7), color: colorMap.coral100 }}
             >
