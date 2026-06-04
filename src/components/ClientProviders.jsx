@@ -2,11 +2,15 @@
 
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { AuthProvider } from "../context/AuthContext";
+import dynamic from "next/dynamic";
 import { ProjectThemeProvider } from "../context/ProjectThemeContext";
 import InitialLoadingGate from "./InitialLoadingGate";
-import LoginModal from "./LoginModal";
+import { RouteTransitionProvider } from "./RouteTransitionProvider";
 import ThemeSetting from "./ThemeSetting";
+
+const PersistentPerlinBackdrop = dynamic(() => import("./PersistentPerlinBackdrop"), {
+  ssr: false,
+});
 
 const theme = createTheme({
   typography: {
@@ -20,12 +24,12 @@ export default function ClientProviders({ children }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ProjectThemeProvider>
-        <AuthProvider>
+        <RouteTransitionProvider>
+          <PersistentPerlinBackdrop />
           <InitialLoadingGate deferredControls={<ThemeSetting />}>
             {children}
-            <LoginModal />
           </InitialLoadingGate>
-        </AuthProvider>
+        </RouteTransitionProvider>
       </ProjectThemeProvider>
     </ThemeProvider>
   );

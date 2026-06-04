@@ -1,12 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { AppButton } from "../components/AppButton";
-import LoginModal from "../components/LoginModal";
-import ProtectedRoute from "../components/ProtectedRoute";
 
-const BlogEditorRoute = lazy(() => import("../features/blog/pages/BlogEditorPage"));
-const BlogListRoute = lazy(() => import("../features/blog/pages/BlogListPage"));
-const BlogPostRoute = lazy(() => import("../features/blog/pages/BlogPostPage"));
 const HomepageBackground = lazy(() => import("../components/HomepageBackground"));
 const LoadingOverlayLabRoute = lazy(() => import("../features/visual-labs/pages/LoadingOverlayLabPage"));
 const PerlinContoursRoute = lazy(() => import("../features/visual-labs/pages/PerlinContoursPage"));
@@ -14,16 +9,6 @@ const ScanEffectRoute = lazy(() => import("../features/visual-labs/pages/ScanEff
 
 function LazyRoute({ children }) {
   return <Suspense fallback={null}>{children}</Suspense>;
-}
-
-function BlogEditorElement() {
-  return (
-    <LazyRoute>
-      <ProtectedRoute>
-        <BlogEditorRoute />
-      </ProtectedRoute>
-    </LazyRoute>
-  );
 }
 
 function HomeRouteElement() {
@@ -42,9 +27,6 @@ function HomeRouteElement() {
           <AppButton component={Link} to="/scan-effect" tone="darkOverlay">
             Open Scan Effect
           </AppButton>
-          <AppButton component={Link} to="/blog" tone="darkOverlay">
-            Open Blog
-          </AppButton>
         </div>
       </div>
     </main>
@@ -60,13 +42,8 @@ export default function App() {
         <Route path="/perlin-contours" element={<LazyRoute><PerlinContoursRoute /></LazyRoute>} />
         <Route path="/scan-effect" element={<LazyRoute><ScanEffectRoute /></LazyRoute>} />
         <Route path="/loading-overlay-lab" element={<LazyRoute><LoadingOverlayLabRoute /></LazyRoute>} />
-        <Route path="/blog" element={<LazyRoute><BlogListRoute /></LazyRoute>} />
-        <Route path="/blog/new" element={<BlogEditorElement />} />
-        <Route path="/blog/:slug" element={<LazyRoute><BlogPostRoute /></LazyRoute>} />
-        <Route path="/blog/:slug/edit" element={<BlogEditorElement />} />
         <Route path="*" element={<Navigate to="/perlin-contours" replace />} />
       </Routes>
-      <LoginModal />
     </>
   );
 }

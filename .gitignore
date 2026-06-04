@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .next/
+out/
 .DS_Store
 Thumbs.db
 *.log
@@ -11,5 +12,4 @@ backend/.env
 __pycache__/
 *.pyc
 backend/data/*.db
-backend/uploads/*
-!backend/uploads/.gitkeep
+backend/uploads/

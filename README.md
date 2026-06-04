@@ -1,46 +1,38 @@
 # motorsport-background-demo
 
-一个基于 **Next.js App Router** 的视觉实验项目，主方向是高级赛车 / 科技感网页背景、Three.js 动效、Shader 页面，以及内置 SQLite 博客系统。
+一个基于 **Next.js App Router** 的个人视觉博客与 Three.js 实验项目，包含 Perlin 等高线背景、全站 loading、主题切换、音乐控件、Markdown 写作页和 WebGL 视觉实验。
 
-A **Next.js App Router** playground for premium motorsport-style visual experiments, Three.js motion, shader-heavy pages, and an in-app SQLite blog system.
+A **Next.js App Router** personal visual blog and Three.js playground with Perlin contour backgrounds, global loading, theme switching, audio controls, Markdown writing pages, and WebGL visual experiments.
 
 ## 路由 / Routes
 
-- `/` - Perlin contour 首页，包含 shader 背景、图片 reveal 图层、自定义 Three.js loading overlay。  
-  Perlin contour landing page with shader controls, reveal-image layer, and a custom Three.js loading overlay.
-- `/home` - 深色电影感首页背景实验。  
-  Dark cinematic homepage background experiment.
-- `/perlin-contours` - Perlin contour 视觉实验页，也是当前默认首页内容。  
-  Perlin contour visual experiment route, also used by the current root page.
-- `/scan-effect` - 基于深度图的扫描效果实验，参考 `d3adrabbit/ScanningEffectWithDepthMap` 并改成稳定 WebGL shader 路由。  
-  Depth-map scan study inspired by `d3adrabbit/ScanningEffectWithDepthMap`, adapted into a stable WebGL shader route.
-- `/loading-overlay-lab` - Loading overlay 调试页，用来调整 Twin/Z 尺寸、间距和移动端布局。  
-  Static loading-overlay preview route for tuning Twin/Z size, spacing, and mobile layout.
-- `/blog` - 公开博客列表，登录后切换为管理模式。  
-  Public blog index that switches into admin mode after login.
-- `/blog/:slug` - 公开博客详情页。  
-  Public blog detail page.
-- `/blog/new` - 受保护的新建文章页。  
-  Protected post editor for creating posts.
-- `/blog/:slug/edit` - 受保护的编辑文章页。  
-  Protected post editor for updating posts.
+- `/` - 默认首页，包含 Perlin 背景、个人主页首屏和下滚博客目录。
+  Default homepage with Perlin background, personal hero, and scroll-down writing index.
+- `/home` - 深色视觉实验页。
+  Dark visual experiment page.
+- `/perlin-contours` - Perlin contour 视觉实验页。
+  Perlin contour visual experiment route.
+- `/scan-effect` - 基于深度图的扫描效果实验。
+  Depth-map scan effect study.
+- `/loading-overlay-lab` - Loading overlay 调试页。
+  Static loading-overlay preview route.
+- `/writing/[slug]` - Markdown 文章详情页。
+  Markdown article detail route.
 
-## 项目结构 / Project Structure
+## 目录 / Structure
 
-- `src/app` - Next.js App Router 入口和 API route handlers。页面文件保持轻量，只负责路由转发。  
-  Next.js App Router entrypoints and API route handlers. Page files should stay thin and delegate to feature pages.
-- `src/features/blog/pages` - 博客列表、详情、编辑页实现。  
-  Blog list, detail, and editor page implementations.
-- `src/features/visual-labs/pages` - Perlin、Scan、Home、Loading Overlay Lab 等视觉实验页。  
-  Visual experiment pages for perlin contours, scan effect, home lab, and loading overlay lab.
-- `src/components` - 共享 UI、Provider、可复用 Three.js 图层和视觉组件。  
-  Shared UI, providers, reusable Three.js layers, and visual components.
-- `src/lib` - 客户端工具、设计 token、导航封装、服务端博客辅助函数。  
-  Client utilities, design tokens, navigation wrappers, and server-side blog helpers.
-- `src/legacy-vite` - Next.js 迁移前的 Vite shell 归档，不是当前活跃运行时。  
-  Archived Vite shell from before the Next.js migration. It is not the active runtime.
-- `@/` - 在 `jsconfig.json` 中配置为 `src/` 的路径别名；新的活跃 Next.js 代码优先使用它。  
-  Configured in `jsconfig.json` as the project alias for `src/`; use it for new active Next.js imports.
+- `content/posts` - Markdown 文章内容。
+  Markdown article source files.
+- `src/app` - Next.js App Router 页面入口。
+  Next.js App Router pages.
+- `src/components` - 全局 UI、provider、loading、主题控件和 Three.js 图层。
+  Shared UI, providers, loading, theme controls, and Three.js layers.
+- `src/features/visual-labs` - 视觉实验页面。
+  Visual experiment pages.
+- `src/features/writing` - 博客目录和文章详情 UI。
+  Writing index and article UI.
+- `src/lib` - 主题色、Markdown 读取和公共工具。
+  Theme colors, Markdown loading, and shared utilities.
 
 ## 技术栈 / Tech Stack
 
@@ -52,33 +44,8 @@ A **Next.js App Router** playground for premium motorsport-style visual experime
 - `@react-three/fiber`
 - GSAP
 - MUI
-- React Markdown
-- SQLite
-- `better-sqlite3`
 
-## 使用过的 Skills / Skills Used
-
-这个项目的实现过程参考过这些 Codex skills：
-
-The project work in this repo was guided by these Codex skills:
-
-- `frontend-design`  
-  用于视觉方向、版式、界面质感控制，避免页面变成普通模板感。  
-  Used for visual direction, composition, and keeping the interface from drifting into generic landing-page aesthetics.
-
-- `emilkowal-animations`  
-  用于动效节奏、缓动、transform 优先的运动方式，以及交互手感。  
-  Used for motion design guidance, especially around animation restraint, pacing, transform-first movement, and polished interaction feel.
-
-- `webgpu-threejs-tsl`  
-  用于 GPU 渲染、Three.js/WebGPU 思路、shader 架构和扫描效果技术方向。  
-  Used to guide GPU-driven rendering exploration, Three.js/WebGPU patterns, shader-oriented architecture, and scan-effect technical direction.
-
-- `find-skills`  
-  用于发现和评估适合创意 WebGL、shader 前端工作的额外 skills。  
-  Used to discover and evaluate additional skills relevant to creative WebGL and shader-heavy frontend work.
-
-## 运行 / Running Locally
+## 本地运行 / Local Development
 
 安装依赖：
 
@@ -96,70 +63,90 @@ Start the development server:
 npm run dev
 ```
 
-需要把开发日志写入文件时：
+把开发日志写入 `logs/next-dev.log`：
 
-When you want development logs written to a file:
+Write development logs to `logs/next-dev.log`:
 
 ```bash
 npm run dev:log
 ```
 
-日志会写入 `logs/next-dev.log`，`logs/*.log` 不会进入 git。
+## 静态构建 / Static Build
 
-Logs are written to `logs/next-dev.log`, and `logs/*.log` files are ignored by git.
+本项目已经配置为静态导出：
 
-生产构建和启动：
-
-Build and start for production:
+This project is configured for static export:
 
 ```bash
 npm run build
-npm run start
 ```
 
-Next.js 现在同时负责页面路由和博客 API 层。
+构建完成后，静态文件会输出到：
 
-The Next.js app now serves both page routes and the blog API layer directly.
+The static site is generated into:
 
-## 博客后端 / Blog Backend
+```text
+out/
+```
 
-服务端会从以下位置读取配置：
+## GitHub Pages 部署 / GitHub Pages Deployment
 
-The server reads configuration from:
+这个项目不需要后端，适合部署到免费的 GitHub Pages。
 
-- `backend/.env`
-- root `.env`
-- root `.env.local`
+This project does not require a backend and can be hosted on GitHub Pages.
 
-当前默认存储路径：
+推荐方式：
 
-Current default storage paths:
+Recommended setup:
 
-- database / 数据库：`backend/data/blog.db`
-- uploads / 上传目录：`backend/uploads`
+- 如果使用个人主页仓库 `username.github.io`，直接发布 `out/`。
+  If using a user site repository named `username.github.io`, publish `out/` directly.
+- 如果使用项目页 `username.github.io/repo-name/`，需要额外配置 `basePath` 和静态资源路径。
+  If using a project page like `username.github.io/repo-name/`, configure `basePath` and public asset paths first.
 
-本地开发默认管理员账号：
+当前默认配置更适合：
 
-Default admin credentials in local development:
+The current default config is best suited for:
 
-- username / 用户名：`admin`
-- password / 密码：`change-this-password`
+```text
+https://username.github.io/
+```
 
-博客后端位于 `src/app/api/*`，使用 SQLite，暴露 `/api/*` 和 `/uploads/*`。
+## 写文章 / Writing Posts
 
-The current blog backend lives in `src/app/api/*`, uses SQLite, and exposes `/api/*` plus `/uploads/*`.
+新增文章时：
 
-## 重要说明 / Notes
+To add a post:
 
-- 首页 loading 由 `src/components/ThreeLoadingOverlay.jsx` 驱动，使用正交 Three.js 场景、CanvasTexture logo、斜切片下落转场。  
-  The homepage loading experience is driven by `src/components/ThreeLoadingOverlay.jsx` and uses an orthographic Three.js scene, canvas-based logo textures, and staggered falling slice panels for exit transition.
-- 共享项目颜色位于 `src/lib/projectColors.js`，并从 `src/lib/theme.js` 重新导出；`BASE_COLOR` 会生成 5 套颜色组。  
-  Shared project colors live in `src/lib/projectColors.js` and are re-exported from `src/lib/theme.js`. `BASE_COLOR` drives five generated color groups.
-- Next.js 重构提示词保存在 `NEXTJS_REFACTOR_PROMPTS.md`。  
-  The Next.js migration prompt suite lives in `NEXTJS_REFACTOR_PROMPTS.md`.
-- `/scan-effect` 当前使用稳定 WebGL shader 实现，没有直接生产化 WebGPU/TSL 版本，因为原参考栈和本地运行环境不完全兼容。  
-  The `/scan-effect` route currently uses a stable WebGL shader implementation rather than a direct production WebGPU/TSL port, because the original reference stack was not fully compatible with this local app/runtime combination.
-- Scan study 资源存放在 `public/scan-effect`。  
-  Assets for the scan study are stored in `public/scan-effect`.
-- 旧 Python/FastAPI 运行时已经移除；`backend/` 现在只保存本地环境、SQLite 数据和 Next.js server 使用的上传文件。  
-  The old Python/FastAPI runtime has been removed. The `backend/` directory now only holds local env, SQLite data, and uploaded files used by the Next.js server.
+1. 在 `content/posts` 新增一个 `.md` 文件。
+   Add a `.md` file under `content/posts`.
+2. 在 `src/features/writing/postIndex.js` 里添加文章索引信息。
+   Add its index metadata in `src/features/writing/postIndex.js`.
+3. 重新构建并部署。
+   Rebuild and deploy.
+
+文章 frontmatter 示例：
+
+Example frontmatter:
+
+```md
+---
+title: 用 Markdown 写一篇个人技术札记
+slug: chinese-blog-writing-sample
+category: Personal Log
+date: 2026-06-04
+excerpt: 一个中文博客文章示例。
+tags: 中文, markdown, 写作
+---
+```
+
+## 说明 / Notes
+
+- 旧文章系统、SQLite、上传接口和登录后台已经移除。
+  The old article system, SQLite storage, upload API, and login admin flow have been removed.
+- 当前博客是构建时 Markdown 静态生成，不需要数据库。
+  The current writing system is statically generated from Markdown at build time and does not need a database.
+- 主题色集中在 `src/lib/projectColors.js`。
+  Theme colors are centralized in `src/lib/projectColors.js`.
+- 全站 loading 位于 `src/components/ThreeLoadingOverlay.jsx`。
+  The global loading overlay lives in `src/components/ThreeLoadingOverlay.jsx`.

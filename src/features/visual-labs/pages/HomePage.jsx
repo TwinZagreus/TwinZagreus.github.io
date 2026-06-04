@@ -18,9 +18,6 @@ export default function HomePage() {
           <AppButton component={Link} to="/scan-effect" tone="darkOverlay">
             Open Scan Effect
           </AppButton>
-          <AppButton component={Link} to="/blog" tone="darkOverlay">
-            Open Blog
-          </AppButton>
         </div>
       </div>
     </main>

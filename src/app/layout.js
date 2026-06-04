@@ -3,7 +3,7 @@ import ClientProviders from "../components/ClientProviders";
 
 export const metadata = {
   title: "Motorsport Background Demo",
-  description: "Next.js rebuild of the motorsport shader and blog playground.",
+  description: "Next.js playground for motorsport-inspired shaders, Three.js motion, and visual experiments.",
 };
 
 export const viewport = {
@@ -19,6 +19,7 @@ export default function RootLayout({ children }) {
         <div
           aria-hidden="true"
           id="initial-loading-shell"
+          suppressHydrationWarning
           style={{
             backgroundColor: "#FFEBF5",
             inset: 0,

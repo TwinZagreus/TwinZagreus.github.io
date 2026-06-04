@@ -1,17 +1,17 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useReducedMotion } from "framer-motion";
+import { alpha } from "@mui/material/styles";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@/lib/navigation";
 import * as THREE from "three";
-import { AppButton } from "@/components/AppButton";
+import AuthorAvatar from "@/components/AuthorAvatar";
 import MouseRevealLayer from "@/components/MouseRevealLayer";
-import { useAuth } from "@/context/AuthContext";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
+import WritingIndexSection from "@/features/writing/WritingIndexSection";
 import { PROJECT_COLOR_MAP } from "@/lib/theme";
 
-function makeDefaultControls(colorMap = PROJECT_COLOR_MAP) {
+export function makeDefaultControls(colorMap = PROJECT_COLOR_MAP) {
   return {
     backgroundColor: colorMap.coral100,
     lineColor: colorMap.neutral900,
@@ -342,7 +342,7 @@ function ContourField({ controlsRef, isReducedMotion }) {
   );
 }
 
-const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion }) {
+export const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion }) {
   const canvasHostRef = useRef(null);
   const [eventSource, setEventSource] = useState(null);
 
@@ -370,8 +370,14 @@ const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion
 
 export default function PerlinContoursPage() {
   const isReducedMotion = useReducedMotion();
-  const { isAuthenticated, openLoginModal } = useAuth();
   const { colorMap } = useProjectTheme();
+  const pageRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: pageRef,
+    offset: ["start start", "end start"],
+  });
+  const heroY = useTransform(scrollYProgress, [0, 0.42], [0, -160]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.34], [1, 0.16]);
   const themedDefaults = useMemo(() => makeDefaultControls(colorMap), [colorMap]);
   const [controls, setControls] = useState(themedDefaults);
   const [imageControls, setImageControls] = useState(DEFAULT_IMAGE_CONTROLS);
@@ -424,47 +430,104 @@ export default function PerlinContoursPage() {
 
   return (
     <main
-      className="relative min-h-screen min-h-[100dvh] overflow-hidden"
-      style={{ backgroundColor: controls.backgroundColor }}
+      className="relative z-10 min-h-[200vh] overflow-x-hidden"
+      ref={pageRef}
+      style={{ color: colorMap.ink950 }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(236,233,226,0.3)_100%)]" />
-      <MouseRevealLayer controlsRef={imageControlsRef} />
+      <section className="relative min-h-screen min-h-[100dvh] overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(180deg, ${alpha(colorMap.coral100, 0.28)} 0%, ${alpha(colorMap.neutral100, 0.3)} 100%)`,
+          }}
+        />
+        <MouseRevealLayer controlsRef={imageControlsRef} />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-5 py-5 sm:px-7">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.32em] text-[#7c796f]">Perlin contour study</div>
-          <h1 className="mt-3 max-w-lg font-['Trebuchet_MS','Segoe_UI',sans-serif] text-[clamp(2.8rem,8vw,6.5rem)] uppercase leading-[0.88] tracking-[0.08em] text-[#4f544f]">
-            Perlin Contour
-            <br />
-            Topography
-          </h1>
-        </div>
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-20 px-5 py-5 sm:px-7"
+        style={{ opacity: heroOpacity, y: heroY }}
+      >
+        <div className="grid h-full grid-rows-[auto_1fr_auto] gap-8">
+          <header className="flex items-start justify-between gap-6">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.36em]" style={{ color: colorMap.neutral700 }}>
+                TwinZ personal journal
+              </div>
+              <h1
+                className="mt-4 max-w-4xl font-['Trebuchet_MS','Segoe_UI',sans-serif] text-[clamp(3.2rem,9vw,7.8rem)] uppercase leading-[0.82] tracking-[0.045em]"
+                style={{ color: colorMap.ink700 }}
+              >
+                Notes On
+                <br />
+                Motion
+              </h1>
+            </div>
 
-        <div className="pointer-events-auto flex flex-wrap justify-end gap-3">
-          <AppButton component={Link} to="/blog" tone="overlay">
-            Open Blog
-          </AppButton>
-          <AppButton component={Link} to="/scan-effect" tone="overlay">
-            Open Scan Effect
-          </AppButton>
-          <AppButton
-            onClick={() => openLoginModal("/blog")}
-            tone="overlay"
-            type="button"
-          >
-            {isAuthenticated ? "Manage Blog" : "Login / 登录"}
-          </AppButton>
-          <AppButton component={Link} to="/home" tone="overlay">
-            Home Lab
-          </AppButton>
-        </div>
-      </div>
+            <aside className="hidden w-[min(28vw,380px)] pt-1 lg:block" style={{ color: colorMap.neutral800 }}>
+              <div
+                className="border-t pt-4 text-[10px] uppercase tracking-[0.32em]"
+                style={{ borderColor: alpha(colorMap.neutral700, 0.45), color: colorMap.neutral700 }}
+              >
+                Latest Index
+              </div>
+              <div className="mt-6 space-y-5">
+                {[
+                  ["01", "Contour systems for quiet interfaces", "Three.js / Field notes"],
+                  ["02", "Loading screens as a cinematic surface", "Motion / Frontend"],
+                  ["03", "Theme color as identity infrastructure", "Design system"],
+                ].map(([index, title, meta]) => (
+                  <article
+                    className="grid grid-cols-[2.5rem_1fr] gap-4 border-t pt-4"
+                    key={index}
+                    style={{ borderColor: alpha(colorMap.neutral700, 0.25) }}
+                  >
+                    <span className="text-[10px] tracking-[0.28em]" style={{ color: colorMap.neutral600 }}>
+                      {index}
+                    </span>
+                    <div>
+                      <h2 className="text-sm uppercase leading-snug tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
+                        {title}
+                      </h2>
+                      <p className="mt-2 text-[10px] uppercase tracking-[0.22em]" style={{ color: colorMap.neutral600 }}>
+                        {meta}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </aside>
+          </header>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-5 py-6 sm:px-7">
-        <div className="max-w-2xl text-[11px] uppercase tracking-[0.28em] text-[#8b877d]">
-          Randomly distributed contour islands with near-saturated drafting density, finer smoother contours, and faster undercurrents pushing through local eddies
+          <div className="self-center justify-self-end pr-[min(9vw,10rem)]">
+            <div
+              className="hidden border-l pl-5 text-[10px] uppercase leading-relaxed tracking-[0.28em] md:block"
+              style={{ borderColor: alpha(colorMap.neutral700, 0.35), color: colorMap.neutral700 }}
+            >
+              Designing with maps,
+              <br />
+              motion, memory,
+              <br />
+              and browser light.
+            </div>
+          </div>
+
+          <div className="mb-2 flex max-w-3xl items-end gap-5">
+            <AuthorAvatar />
+            <div className="border-l pl-5" style={{ borderColor: alpha(colorMap.neutral700, 0.35) }}>
+              <div className="text-[10px] uppercase tracking-[0.32em]" style={{ color: colorMap.neutral700 }}>
+                Author Signal / 2026
+              </div>
+              <p
+                className="mt-3 max-w-xl text-[11px] uppercase leading-relaxed tracking-[0.24em]"
+                style={{ color: colorMap.neutral600 }}
+              >
+                Personal notes on visual systems, shader sketches, motion timing, and small interface decisions.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </motion.div>
+      </section>
 
       {/* <div className="pointer-events-none absolute right-4 top-28 z-30 sm:right-7 sm:top-32">
         <section
@@ -692,7 +755,7 @@ export default function PerlinContoursPage() {
         </section>
       </div> */}
 
-      <ContourCanvas controlsRef={controlsRef} isReducedMotion={Boolean(isReducedMotion)} />
+      <WritingIndexSection />
     </main>
   );
 }

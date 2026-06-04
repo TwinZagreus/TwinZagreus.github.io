@@ -6,7 +6,7 @@ import { useProjectTheme } from "@/context/ProjectThemeContext";
 import CircularKnob from "./CircularKnob";
 import PlayPauseMorphIcon from "./PlayPauseMorphIcon";
 
-const ICON_URL = "/img/final-twin.svg";
+const ICON_URL = "/img/final-single-circle.svg";
 const ICON_ACCENT_COLOR = "#F2555A";
 const VOLUME_CURVE_EXPONENT = 3.32;
 
@@ -87,10 +87,6 @@ export default function ThemeSetting() {
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("timeupdate", handleTimeUpdate);
-
-    audio.play()
-      .then(() => setIsPlaying(true))
-      .catch(() => setIsPlaying(false));
 
     return () => {
       audio.pause();
