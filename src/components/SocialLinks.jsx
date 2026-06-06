@@ -64,12 +64,15 @@ function SocialIcon({ name }) {
   );
 }
 
-export default function SocialLinks() {
+export default function SocialLinks({ align = "left", className = "" }) {
   const isReducedMotion = useReducedMotion();
   const { colorMap } = useProjectTheme();
 
   return (
-    <nav aria-label="Social links" className="pointer-events-auto relative z-30 mt-5 flex flex-wrap gap-3">
+    <nav
+      aria-label="Social links"
+      className={`pointer-events-auto relative z-30 mt-5 flex flex-wrap gap-3 ${align === "center" ? "justify-center" : ""} ${className}`}
+    >
       {SOCIAL_LINKS.map((link, index) => (
         <motion.a
           className="group inline-flex h-11 items-center gap-2 rounded-full border px-3.5 text-xs uppercase tracking-[0.16em] shadow-sm backdrop-blur-[2px] transition-colors duration-200"

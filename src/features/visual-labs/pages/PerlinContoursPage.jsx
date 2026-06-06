@@ -2,15 +2,22 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { alpha } from "@mui/material/styles";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import AuthorAvatar from "@/components/AuthorAvatar";
-import MouseRevealLayer from "@/components/MouseRevealLayer";
 import SocialLinks from "@/components/SocialLinks";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import WritingIndexSection from "@/features/writing/WritingIndexSection";
+import { getRecentWritingPosts } from "@/features/writing/postIndex";
 import { PROJECT_COLOR_MAP } from "@/lib/theme";
+
+const CENTER_SECTION_COUNT = 3;
+const ABOUT_IMAGE_URLS = [
+  "/img/about-01.png",
+  "/img/about-02.png",
+  "/img/about-03.png",
+];
 
 export function makeDefaultControls(colorMap = PROJECT_COLOR_MAP) {
   return {
@@ -23,24 +30,85 @@ export function makeDefaultControls(colorMap = PROJECT_COLOR_MAP) {
   };
 }
 
-const DEFAULT_CONTROLS = makeDefaultControls();
+function formatCoordinate(value, positiveLabel, negativeLabel) {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
 
-const TUNING_DEFAULTS = {
-  speed: 1,
-  sharpness: 0.36,
-  curvature: 0,
-  thickness: 2,
-};
+  const label = value >= 0 ? positiveLabel : negativeLabel;
+  return `${Math.abs(value).toFixed(2)}°${label}`;
+}
 
-const DEFAULT_IMAGE_CONTROLS = {
-  baseScale: 0.1,
-  baseOffsetX: 0,
-  baseOffsetY: 0,
-  maskAlwaysVisible: false,
-  maskOffsetX: 0,
-  maskOffsetY: 0,
-  maskScale: 0.1,
-};
+function LiveLocationTime({ colorMap }) {
+  const [now, setNow] = useState(() => new Date());
+  const [pointerCoordinates, setPointerCoordinates] = useState({
+    latitude: 0,
+    longitude: 0,
+  });
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const updateFromPointer = (event) => {
+      const width = Math.max(window.innerWidth, 1);
+      const height = Math.max(window.innerHeight, 1);
+      const longitude = (event.clientX / width) * 360 - 180;
+      const latitude = 90 - (event.clientY / height) * 180;
+      setPointerCoordinates({ latitude, longitude });
+    };
+
+    window.addEventListener("pointermove", updateFromPointer, { passive: true });
+    return () => window.removeEventListener("pointermove", updateFromPointer);
+  }, []);
+
+  const timeParts = useMemo(() => {
+    const time = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      hour12: true,
+      minute: "2-digit",
+    }).formatToParts(now);
+
+    const hour = time.find((part) => part.type === "hour")?.value ?? "--";
+    const minute = time.find((part) => part.type === "minute")?.value ?? "--";
+    const dayPeriod = time.find((part) => part.type === "dayPeriod")?.value ?? "";
+    const date = new Intl.DateTimeFormat("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(now);
+
+    return { date, dayPeriod, hour, minute };
+  }, [now]);
+
+  return (
+    <div className="space-y-12">
+      <div className="text-3xl leading-none" style={{ color: colorMap.coral }}>+</div>
+      <section>
+        <div className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]" style={{ borderColor: alpha(colorMap.coral, 0.5), color: colorMap.coral }}>
+          Coordinates / 坐标
+        </div>
+        <p className="mt-5 text-sm font-bold tracking-[0.06em]" style={{ color: colorMap.ink800 }}>
+          Pointer on flat earth
+        </p>
+        <p className="mt-2 text-sm tracking-[0.08em]" style={{ color: colorMap.ink600 }}>
+          {formatCoordinate(pointerCoordinates.latitude, "N", "S")}, {formatCoordinate(pointerCoordinates.longitude, "E", "W")}
+        </p>
+      </section>
+      <section>
+        <div className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]" style={{ borderColor: alpha(colorMap.coral, 0.5), color: colorMap.coral }}>
+          Time / 时间
+        </div>
+        <p className="mt-5 text-3xl leading-none" style={{ color: colorMap.ink800 }}>
+          {timeParts.hour}:{timeParts.minute} <span className="text-sm">{timeParts.dayPeriod}</span>
+        </p>
+        <p className="mt-3 text-sm tracking-[0.08em]" style={{ color: colorMap.ink600 }}>{timeParts.date}</p>
+      </section>
+    </div>
+  );
+}
 
 const vertexShader = `
   varying vec2 vUv;
@@ -372,370 +440,294 @@ export const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReduce
 export default function PerlinContoursPage() {
   const isReducedMotion = useReducedMotion();
   const { colorMap } = useProjectTheme();
-  const pageRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: pageRef,
-    offset: ["start start", "end start"],
-  });
-  const heroY = useTransform(scrollYProgress, [0, 0.42], [0, -160]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.34], [1, 0.16]);
-  const themedDefaults = useMemo(() => makeDefaultControls(colorMap), [colorMap]);
-  const [controls, setControls] = useState(themedDefaults);
-  const [imageControls, setImageControls] = useState(DEFAULT_IMAGE_CONTROLS);
-  const controlsRef = useRef(themedDefaults);
-  const imageControlsRef = useRef(DEFAULT_IMAGE_CONTROLS);
+  const centerScrollRef = useRef(null);
+  const recentPosts = useMemo(() => getRecentWritingPosts(4), []);
+  const age = useMemo(() => new Date().getFullYear() - 1998, []);
+  const [activeCenterSection, setActiveCenterSection] = useState(0);
+  const [activeAboutImage, setActiveAboutImage] = useState(0);
 
   useEffect(() => {
-    setControls((current) => {
-      const next = {
-        ...current,
-        backgroundColor: themedDefaults.backgroundColor,
-        lineColor: themedDefaults.lineColor,
-      };
-      controlsRef.current = next;
-      return next;
-    });
-  }, [themedDefaults]);
+    const element = centerScrollRef.current;
+    if (!element) {
+      return undefined;
+    }
 
-  const updateControl = (key, value) => {
-    const nextValue = Number(value);
-    setControls((current) => {
-      const next = { ...current, [key]: nextValue };
-      controlsRef.current = next;
-      return next;
-    });
-  };
-
-  const resetControls = () => {
-    const next = {
-      ...themedDefaults,
-      ...TUNING_DEFAULTS,
+    const updateActiveSection = () => {
+      const nextSection = Math.max(
+        0,
+        Math.min(CENTER_SECTION_COUNT - 1, Math.round(element.scrollTop / Math.max(element.clientHeight, 1))),
+      );
+      setActiveCenterSection((current) => (current === nextSection ? current : nextSection));
     };
-    controlsRef.current = next;
-    setControls(next);
-  };
 
-  const updateImageControl = (key, value) => {
-    const nextValue = typeof value === "boolean" ? value : Number(value);
-    setImageControls((current) => {
-      const next = { ...current, [key]: nextValue };
-      imageControlsRef.current = next;
-      return next;
-    });
-  };
+    updateActiveSection();
+    element.addEventListener("scroll", updateActiveSection, { passive: true });
+    window.addEventListener("resize", updateActiveSection);
 
-  const resetImageControls = () => {
-    imageControlsRef.current = DEFAULT_IMAGE_CONTROLS;
-    setImageControls(DEFAULT_IMAGE_CONTROLS);
-  };
+    return () => {
+      element.removeEventListener("scroll", updateActiveSection);
+      window.removeEventListener("resize", updateActiveSection);
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveAboutImage((current) => (current + 1) % ABOUT_IMAGE_URLS.length);
+    }, 4000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <main
-      className="relative z-10 min-h-[200vh] overflow-x-hidden"
-      ref={pageRef}
+      className="relative z-10 h-screen h-[100dvh] overflow-hidden"
       style={{ color: colorMap.ink950 }}
     >
-      <section className="relative min-h-screen min-h-[100dvh] overflow-hidden">
+      <style>
+        {`
+          .perlin-center-scroll {
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+          }
+
+          .perlin-center-panel {
+            scroll-snap-stop: always;
+          }
+
+          .perlin-center-scroll::-webkit-scrollbar {
+            display: none;
+            height: 0;
+            width: 0;
+          }
+        `}
+      </style>
+
+      <section className="relative h-full overflow-hidden px-5 py-6 sm:px-8 lg:px-12">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            background: `linear-gradient(180deg, ${alpha(colorMap.coral100, 0.28)} 0%, ${alpha(colorMap.neutral100, 0.3)} 100%)`,
+            background: `radial-gradient(circle at 50% 42%, ${alpha(colorMap.coral100, 0.78)} 0%, ${alpha(colorMap.coral100, 0.34)} 45%, ${alpha(colorMap.neutral100, 0.24)} 100%)`,
           }}
         />
-        <MouseRevealLayer controlsRef={imageControlsRef} />
 
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-20 px-5 py-5 sm:px-7"
-        style={{ opacity: heroOpacity, y: heroY }}
-      >
-        <div className="grid h-full grid-rows-[auto_1fr_auto] gap-8">
-          <header className="flex items-start justify-between gap-6">
-            <div>
-              <div className="text-xs uppercase tracking-[0.34em]" style={{ color: colorMap.coral }}>
-                TwinZ personal journal
-              </div>
-              <h1
-                className="mt-4 max-w-4xl font-['Trebuchet_MS','Segoe_UI',sans-serif] text-[clamp(3.2rem,9vw,7.8rem)] uppercase leading-[0.82] tracking-[0.045em]"
-                style={{ color: colorMap.ink700 }}
-              >
-                Notes On
-                <br />
-                Motion
-              </h1>
-              <SocialLinks />
+        <div className="relative z-20 grid h-full grid-cols-[minmax(150px,0.42fr)_minmax(520px,1.25fr)_minmax(240px,0.46fr)] grid-rows-[auto_1fr] gap-x-8 gap-y-6 max-lg:grid-cols-1">
+          <header className="relative col-span-3 grid grid-cols-[1fr_auto_1fr] items-center max-lg:col-span-1">
+            <div className="flex items-center gap-5 text-xs uppercase tracking-[0.32em]" style={{ color: colorMap.ink800 }}>
+              <span className="font-bold">TwinZ</span>
+              <span className="h-px w-8" style={{ backgroundColor: alpha(colorMap.coral, 0.45) }} />
+              <span style={{ color: colorMap.coral }}>Personal Portfolio</span>
             </div>
 
-            <aside className="hidden w-[min(24vw,320px)] pt-1 lg:block" style={{ color: colorMap.neutral800 }}>
-              <div
-                className="border-t pt-4 text-xs uppercase tracking-[0.3em]"
-                style={{ borderColor: alpha(colorMap.coral, 0.48), color: colorMap.coral }}
-              >
-                Right signal
-              </div>
-              <p className="mt-6 text-sm uppercase leading-relaxed tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
-                Open the lyric control near setting to let the right side become a transparent music panel.
-              </p>
-            </aside>
+            <nav className="relative grid w-[19rem] grid-cols-3 items-center text-center text-xs uppercase tracking-[0.32em]" style={{ color: colorMap.ink700 }}>
+              <span
+                aria-hidden="true"
+                className="absolute -bottom-4 left-0 h-1.5 w-1.5 rounded-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                style={{
+                  backgroundColor: colorMap.coral,
+                  transform: `translateX(calc(${activeCenterSection} * (19rem / 3) + (19rem / 6) - 0.1875rem))`,
+                }}
+              />
+              <span className="relative z-10">
+                Home
+              </span>
+              <span className="relative z-10">
+                Notes
+              </span>
+              <span className="relative z-10">
+                About
+              </span>
+            </nav>
+
+            <div />
           </header>
 
-          <div className="self-center justify-self-end pr-[min(9vw,10rem)]">
-            <div
-              className="hidden border-l pl-5 text-sm uppercase leading-relaxed tracking-[0.22em] md:block"
-              style={{ borderColor: alpha(colorMap.coral, 0.4), color: colorMap.ink700 }}
-            >
-              Designing with maps,
-              <br />
-              motion, memory,
-              <br />
-              and browser light.
-            </div>
-          </div>
-
-          <div className="mb-2 flex max-w-3xl items-end gap-5">
-            <AuthorAvatar />
-            <div className="border-l pl-5" style={{ borderColor: alpha(colorMap.neutral700, 0.35) }}>
-              <div className="text-xs uppercase tracking-[0.3em]" style={{ color: colorMap.coral }}>
-                Author Signal / 2026
-              </div>
-              <p
-                className="mt-3 max-w-xl text-sm uppercase leading-relaxed tracking-[0.18em]"
-                style={{ color: colorMap.ink700 }}
-              >
-                Personal notes on visual systems, shader sketches, motion timing, and small interface decisions.
+          <aside className="hidden min-h-0 flex-col justify-between pb-7 pt-20 lg:flex">
+            <LiveLocationTime colorMap={colorMap} />
+            <div>
+              <div className="mb-5 font-serif text-2xl italic" style={{ color: alpha(colorMap.coral, 0.45) }}>TwinZ</div>
+              <div className="h-px w-44" style={{ backgroundColor: alpha(colorMap.coral, 0.4) }} />
+              <p className="mt-5 max-w-56 text-sm uppercase leading-relaxed tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
+                Designing with intention. Building with curiosity.
               </p>
             </div>
+          </aside>
+
+          <div
+            className="perlin-center-scroll min-h-0 overflow-y-auto overscroll-contain snap-y snap-mandatory max-lg:row-start-2"
+            ref={centerScrollRef}
+          >
+            <section className="perlin-center-panel flex h-full min-h-0 snap-start flex-col items-center justify-between py-[clamp(2rem,5vh,4.5rem)] text-center">
+              <div className="flex flex-col items-center gap-20">
+                <div className="text-sm uppercase tracking-[0.62em]" style={{ color: colorMap.coral }}>
+                  Design / Code / Motion
+                </div>
+                <h1
+                  className="font-serif text-[clamp(4.4rem,10.4vw,11rem)] uppercase leading-[0.82] tracking-[0.035em]"
+                  style={{ color: colorMap.ink800, textShadow: `0 14px 42px ${alpha(colorMap.coral, 0.18)}` }}
+                >
+                  Notes On Motion
+                </h1>
+                <div className="space-y-12">
+                  <div className="text-[clamp(1.55rem,2.2vw,2.6rem)] tracking-[0.22em]" style={{ color: colorMap.coral }}>
+                    记录灵感，探索表达的边界。
+                  </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <span className="h-px w-16" style={{ backgroundColor: alpha(colorMap.coral, 0.46) }} />
+                    <span className="h-2 w-2 rotate-45" style={{ backgroundColor: colorMap.coral }} />
+                    <span className="h-px w-16" style={{ backgroundColor: alpha(colorMap.coral, 0.46) }} />
+                  </div>
+                  <p className="max-w-3xl text-base leading-loose tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
+                    I design digital experiences that move with purpose and feel.
+                    <br />
+                    Where maps, motion, memory, and code meet, I build quiet systems that speak clearly.
+                  </p>
+                </div>
+                <div className="flex flex-col items-center gap-14">
+                  <AnimatePresence initial={false} mode="wait">
+                    <motion.div
+                      animate={isReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                      exit={isReducedMotion ? undefined : { opacity: 0, y: -18 }}
+                      initial={isReducedMotion ? false : { opacity: 0, y: 34 }}
+                      key={activeAboutImage}
+                      transition={{ duration: 0.46, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <AuthorAvatar
+                        caption=""
+                        imageUrl={ABOUT_IMAGE_URLS[activeAboutImage]}
+                        size="clamp(104px, 9vw, 148px)"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                  <SocialLinks align="center" />
+                </div>
+              </div>
+
+              <div
+                className="grid w-[min(960px,86vw)] grid-cols-[0.78fr_1.35fr_1.18fr_0.72fr] items-center border px-6 py-5 text-center backdrop-blur-[2px]"
+                style={{
+                  backgroundColor: alpha(colorMap.coral100, 0.34),
+                  borderColor: alpha(colorMap.coral, 0.28),
+                  color: colorMap.ink800,
+                }}
+              >
+                {[
+                  ["田 / Tian", "姓 / Surname"],
+                  ["543150640@qq.com", "邮箱 / Email"],
+                  ["15886371859", "电话 / Phone"],
+                  [`${age}`, "年龄 / Age"],
+                ].map(([value, label], index) => (
+                  <div className={index ? "border-l" : ""} key={label} style={{ borderColor: alpha(colorMap.coral, 0.22) }}>
+                    <div className="break-words px-2 text-[clamp(0.82rem,1.08vw,1.35rem)] leading-tight tracking-[0.04em]">{value}</div>
+                    <div className="mt-3 text-xs uppercase tracking-[0.2em]" style={{ color: colorMap.ink700 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="perlin-center-panel h-full min-h-0 snap-start py-16">
+              <WritingIndexSection />
+            </section>
+
+            <section className="perlin-center-panel relative flex h-full min-h-0 snap-start items-center justify-center py-16">
+              <button
+                aria-label="Previous about image"
+                className="absolute left-5 top-1/2 z-10 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:-translate-x-1"
+                onClick={() => {
+                  setActiveAboutImage((current) => (
+                    current === 0 ? ABOUT_IMAGE_URLS.length - 1 : current - 1
+                  ));
+                }}
+                style={{
+                  backgroundColor: alpha(colorMap.coral100, 0.72),
+                  borderColor: alpha(colorMap.coral, 0.32),
+                  color: colorMap.coral,
+                }}
+                type="button"
+              >
+                ←
+              </button>
+
+              <div
+                className="relative grid h-[min(88vh,900px)] w-[min(94vw,1440px)] place-items-center border p-3 shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px]"
+                style={{
+                  backgroundColor: alpha(colorMap.coral100, 0.3),
+                  borderColor: alpha(colorMap.coral, 0.28),
+                }}
+              >
+                <div
+                  className="absolute inset-3 border"
+                  style={{
+                    backgroundColor: alpha(colorMap.coral100, 0.18),
+                    borderColor: alpha(colorMap.coral, 0.18),
+                  }}
+                />
+                <div
+                  className="relative grid h-full w-full min-h-0 place-items-center overflow-hidden border"
+                  style={{
+                    backgroundColor: alpha(colorMap.coral100, 0.2),
+                    borderColor: alpha(colorMap.coral, 0.16),
+                  }}
+                >
+                  <img
+                    alt={`About visual ${activeAboutImage + 1}`}
+                    className="h-full w-full object-cover"
+                    draggable="false"
+                    src={ABOUT_IMAGE_URLS[activeAboutImage]}
+                  />
+                </div>
+              </div>
+
+              <button
+                aria-label="Next about image"
+                className="absolute right-5 top-1/2 z-10 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:translate-x-1"
+                onClick={() => {
+                  setActiveAboutImage((current) => (current + 1) % ABOUT_IMAGE_URLS.length);
+                }}
+                style={{
+                  backgroundColor: alpha(colorMap.coral100, 0.72),
+                  borderColor: alpha(colorMap.coral, 0.32),
+                  color: colorMap.coral,
+                }}
+                type="button"
+              >
+                →
+              </button>
+            </section>
           </div>
+
+          <aside className="hidden min-h-0 flex-col justify-center lg:flex">
+            <div className="self-end text-3xl leading-none" style={{ color: colorMap.coral }}>+</div>
+            <section className="mt-28 border-l pl-8" style={{ borderColor: alpha(colorMap.coral, 0.42) }}>
+              <div className="text-xs uppercase tracking-[0.32em]" style={{ color: colorMap.coral }}>
+                Recent Articles
+              </div>
+              <div className="mt-8 space-y-5">
+                {recentPosts.map((post) => (
+                  <a
+                    className="block border-b pb-5 transition hover:translate-x-1"
+                    href={`/writing/${post.slug}`}
+                    key={post.slug}
+                    style={{ borderColor: alpha(colorMap.coral, 0.22), color: colorMap.ink800 }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="mt-1 grid h-4 w-4 place-items-center rounded-full border text-[9px]" style={{ borderColor: colorMap.coral, color: colorMap.coral }}>•</span>
+                      <div>
+                        <h2 className="text-sm font-bold uppercase leading-snug tracking-[0.16em]">{post.title}</h2>
+                        <p className="mt-3 text-xs tracking-[0.16em]" style={{ color: colorMap.ink600 }}>
+                          {post.date} / 6 min read
+                        </p>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+              <p className="mt-8 text-sm tracking-[0.12em]" style={{ color: colorMap.ink600 }}>
+                Click any article to read more.
+              </p>
+            </section>
+          </aside>
         </div>
-      </motion.div>
       </section>
-
-      {/* <div className="pointer-events-none absolute right-4 top-28 z-30 sm:right-7 sm:top-32">
-        <section
-          aria-label="Contour controls"
-          className="pointer-events-auto w-[min(320px,calc(100vw-2rem))] rounded-2xl border border-[#d9d4ca] bg-[#fbfaf7]/92 p-4 text-[#5f5b52] shadow-[0_18px_48px_rgba(72,62,42,0.12)] backdrop-blur-md"
-          role="dialog"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.32em] text-[#8b877d]">Live contour tuning</div>
-              <div className="mt-2 text-sm text-[#6d685e]">閹锋牕濮╁鎴濇健閺冭绱濋弴鑼殠娴兼俺绻涚紒顓＄箖濞撯槄绱濇稉宥勭窗闁插秵鏌婇崝鐘烘祰閵?/div>
-            </div>
-            <button
-              className="rounded-full border border-[#d7d2c7] px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-[#6a665d] transition hover:border-[#c8c1b4] hover:bg-white"
-              onClick={resetControls}
-              type="button"
-            >
-              Reset
-            </button>
-          </div>
-
-          <div className="mt-4 space-y-4">
-            <label className="block">
-              <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.24em] text-[#6f6a60]">
-                <span>Speed / 闁喎瀹?/span>
-                <span>{controls.speed.toFixed(2)}x</span>
-              </div>
-              <input
-                className="h-2 w-full accent-[#6f7c64]"
-                max="2.4"
-                min="0.2"
-                onInput={(event) => updateControl("speed", event.currentTarget.value)}
-                step="0.01"
-                type="range"
-                value={controls.speed}
-              />
-            </label>
-
-            <label className="block">
-              <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.24em] text-[#6f6a60]">
-                <span>Sharp / Smooth / 鐏忔牠鏀?/ 楠炶櫕绮?/span>
-                <span>{controls.sharpness.toFixed(2)}</span>
-              </div>
-              <input
-                className="h-2 w-full accent-[#6f7c64]"
-                max="1"
-                min="0"
-                onInput={(event) => updateControl("sharpness", event.currentTarget.value)}
-                step="0.01"
-                type="range"
-                value={controls.sharpness}
-              />
-            </label>
-
-            <label className="block">
-              <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.24em] text-[#6f6a60]">
-                <span>Curvature / 瀵垱娲?/span>
-                <span>{controls.curvature.toFixed(2)}</span>
-              </div>
-              <input
-                className="h-2 w-full accent-[#6f7c64]"
-                max="1"
-                min="0"
-                onInput={(event) => updateControl("curvature", event.currentTarget.value)}
-                step="0.01"
-                type="range"
-                value={controls.curvature}
-              />
-            </label>
-
-            <label className="block">
-              <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.24em] text-[#6f6a60]">
-                <span>Thickness / 閸樻艾瀹?/span>
-                <span>{controls.thickness.toFixed(2)} px</span>
-              </div>
-              <input
-                className="h-2 w-full accent-[#6f7c64]"
-                max="2.4"
-                min="0.35"
-                onInput={(event) => updateControl("thickness", event.currentTarget.value)}
-                step="0.01"
-                type="range"
-                value={controls.thickness}
-              />
-            </label>
-          </div>
-        </section>
-      </div>
-
-      <div className="pointer-events-none absolute right-4 top-[34rem] z-30 sm:right-7 sm:top-[36rem]">
-        <section
-          aria-label="Image reveal controls"
-          className="pointer-events-auto w-[min(320px,calc(100vw-2rem))] rounded-2xl border border-[#d9d4ca] bg-[#fbfaf7]/92 p-4 text-[#5f5b52] shadow-[0_18px_48px_rgba(72,62,42,0.12)] backdrop-blur-md"
-          role="dialog"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.32em] text-[#8b877d]">Reveal image layout</div>
-              <div className="mt-2 text-sm text-[#6d685e]">鐠嬪啯鏆?`my.png` 閸?`mask-01.png` 閻ㄥ嫮缂夐弨淇扁偓浣风秴缂冾喕浜掗崣?mask 鐢憡妯夐妴?/div>
-            </div>
-            <button
-              className="rounded-full border border-[#d7d2c7] px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-[#6a665d] transition hover:border-[#c8c1b4] hover:bg-white"
-              onClick={resetImageControls}
-              type="button"
-            >
-              Reset
-            </button>
-          </div>
-
-          <div className="mt-4 space-y-4">
-            <div className="rounded-xl border border-[#e3ddd2] bg-white/45 p-3">
-              <div className="mb-3 text-[11px] uppercase tracking-[0.26em] text-[#7a756b]">my.png</div>
-
-              <label className="block">
-                <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
-                  <span>Scale / 缂傗晜鏂?/span>
-                  <span>{imageControls.baseScale.toFixed(2)}</span>
-                </div>
-                <input
-                  className="h-2 w-full accent-[#6f7c64]"
-                  max="2.5"
-                  min="0.1"
-                  onInput={(event) => updateImageControl("baseScale", event.currentTarget.value)}
-                  step="0.01"
-                  type="range"
-                  value={imageControls.baseScale}
-                />
-              </label>
-
-              <label className="mt-3 block">
-                <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
-                  <span>Offset X / 濡亜鎮?/span>
-                  <span>{imageControls.baseOffsetX.toFixed(2)}</span>
-                </div>
-                <input
-                  className="h-2 w-full accent-[#6f7c64]"
-                  max="0.8"
-                  min="-0.8"
-                  onInput={(event) => updateImageControl("baseOffsetX", event.currentTarget.value)}
-                  step="0.01"
-                  type="range"
-                  value={imageControls.baseOffsetX}
-                />
-              </label>
-
-              <label className="mt-3 block">
-                <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
-                  <span>Offset Y / 缁鹃潧鎮?/span>
-                  <span>{imageControls.baseOffsetY.toFixed(2)}</span>
-                </div>
-                <input
-                  className="h-2 w-full accent-[#6f7c64]"
-                  max="0.8"
-                  min="-0.8"
-                  onInput={(event) => updateImageControl("baseOffsetY", event.currentTarget.value)}
-                  step="0.01"
-                  type="range"
-                  value={imageControls.baseOffsetY}
-                />
-              </label>
-            </div>
-
-            <div className="rounded-xl border border-[#e3ddd2] bg-white/45 p-3">
-              <div className="mb-3 text-[11px] uppercase tracking-[0.26em] text-[#7a756b]">mask-01.png</div>
-
-              <label className="flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
-                <span>Always Visible / 鐢憡妯?/span>
-                <input
-                  checked={imageControls.maskAlwaysVisible}
-                  className="h-4 w-4 accent-[#6f7c64]"
-                  onChange={(event) => updateImageControl("maskAlwaysVisible", event.currentTarget.checked)}
-                  type="checkbox"
-                />
-              </label>
-
-              <label className="mt-3 block">
-                <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
-                  <span>Scale / 缂傗晜鏂?/span>
-                  <span>{imageControls.maskScale.toFixed(2)}</span>
-                </div>
-                <input
-                  className="h-2 w-full accent-[#6f7c64]"
-                  max="2.5"
-                  min="0.4"
-                  onInput={(event) => updateImageControl("maskScale", event.currentTarget.value)}
-                  step="0.01"
-                  type="range"
-                  value={imageControls.maskScale}
-                />
-              </label>
-
-              <label className="mt-3 block">
-                <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
-                  <span>Offset X / 濡亜鎮?/span>
-                  <span>{imageControls.maskOffsetX.toFixed(2)}</span>
-                </div>
-                <input
-                  className="h-2 w-full accent-[#6f7c64]"
-                  max="0.8"
-                  min="-0.8"
-                  onInput={(event) => updateImageControl("maskOffsetX", event.currentTarget.value)}
-                  step="0.01"
-                  type="range"
-                  value={imageControls.maskOffsetX}
-                />
-              </label>
-
-              <label className="mt-3 block">
-                <div className="mb-2 flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-[#6f6a60]">
-                  <span>Offset Y / 缁鹃潧鎮?/span>
-                  <span>{imageControls.maskOffsetY.toFixed(2)}</span>
-                </div>
-                <input
-                  className="h-2 w-full accent-[#6f7c64]"
-                  max="0.8"
-                  min="-0.8"
-                  onInput={(event) => updateImageControl("maskOffsetY", event.currentTarget.value)}
-                  step="0.01"
-                  type="range"
-                  value={imageControls.maskOffsetY}
-                />
-              </label>
-            </div>
-          </div>
-        </section>
-      </div> */}
-
-      <WritingIndexSection />
     </main>
   );
 }

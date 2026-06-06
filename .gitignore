@@ -6,7 +6,7 @@ out/
 Thumbs.db
 *.log
 !logs/.gitkeep
-logs/*.log
+logs/*
 .env
 backend/.env
 __pycache__/
