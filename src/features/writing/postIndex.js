@@ -159,5 +159,17 @@ export function getWritingCategories() {
 }
 
 export function getRecentWritingPosts(limit = 3) {
-  return WRITING_POSTS.slice(0, limit);
+  return getSortedWritingPosts().slice(0, limit);
+}
+
+export function getSortedWritingPosts() {
+  return [...WRITING_POSTS].sort(
+    (left, right) => new Date(right.date).getTime() - new Date(left.date).getTime(),
+  );
+}
+
+export function getWritingTags() {
+  return [...new Set(WRITING_POSTS.flatMap((post) => post.tags))].sort((left, right) =>
+    left.localeCompare(right),
+  );
 }

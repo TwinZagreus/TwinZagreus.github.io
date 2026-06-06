@@ -7,6 +7,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import AuthorAvatar from "@/components/AuthorAvatar";
 import MouseRevealLayer from "@/components/MouseRevealLayer";
+import SocialLinks from "@/components/SocialLinks";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import WritingIndexSection from "@/features/writing/WritingIndexSection";
 import { PROJECT_COLOR_MAP } from "@/lib/theme";
@@ -450,7 +451,7 @@ export default function PerlinContoursPage() {
         <div className="grid h-full grid-rows-[auto_1fr_auto] gap-8">
           <header className="flex items-start justify-between gap-6">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.36em]" style={{ color: colorMap.neutral700 }}>
+              <div className="text-xs uppercase tracking-[0.34em]" style={{ color: colorMap.coral }}>
                 TwinZ personal journal
               </div>
               <h1
@@ -461,47 +462,26 @@ export default function PerlinContoursPage() {
                 <br />
                 Motion
               </h1>
+              <SocialLinks />
             </div>
 
-            <aside className="hidden w-[min(28vw,380px)] pt-1 lg:block" style={{ color: colorMap.neutral800 }}>
+            <aside className="hidden w-[min(24vw,320px)] pt-1 lg:block" style={{ color: colorMap.neutral800 }}>
               <div
-                className="border-t pt-4 text-[10px] uppercase tracking-[0.32em]"
-                style={{ borderColor: alpha(colorMap.neutral700, 0.45), color: colorMap.neutral700 }}
+                className="border-t pt-4 text-xs uppercase tracking-[0.3em]"
+                style={{ borderColor: alpha(colorMap.coral, 0.48), color: colorMap.coral }}
               >
-                Latest Index
+                Right signal
               </div>
-              <div className="mt-6 space-y-5">
-                {[
-                  ["01", "Contour systems for quiet interfaces", "Three.js / Field notes"],
-                  ["02", "Loading screens as a cinematic surface", "Motion / Frontend"],
-                  ["03", "Theme color as identity infrastructure", "Design system"],
-                ].map(([index, title, meta]) => (
-                  <article
-                    className="grid grid-cols-[2.5rem_1fr] gap-4 border-t pt-4"
-                    key={index}
-                    style={{ borderColor: alpha(colorMap.neutral700, 0.25) }}
-                  >
-                    <span className="text-[10px] tracking-[0.28em]" style={{ color: colorMap.neutral600 }}>
-                      {index}
-                    </span>
-                    <div>
-                      <h2 className="text-sm uppercase leading-snug tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
-                        {title}
-                      </h2>
-                      <p className="mt-2 text-[10px] uppercase tracking-[0.22em]" style={{ color: colorMap.neutral600 }}>
-                        {meta}
-                      </p>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <p className="mt-6 text-sm uppercase leading-relaxed tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
+                Open the lyric control near setting to let the right side become a transparent music panel.
+              </p>
             </aside>
           </header>
 
           <div className="self-center justify-self-end pr-[min(9vw,10rem)]">
             <div
-              className="hidden border-l pl-5 text-[10px] uppercase leading-relaxed tracking-[0.28em] md:block"
-              style={{ borderColor: alpha(colorMap.neutral700, 0.35), color: colorMap.neutral700 }}
+              className="hidden border-l pl-5 text-sm uppercase leading-relaxed tracking-[0.22em] md:block"
+              style={{ borderColor: alpha(colorMap.coral, 0.4), color: colorMap.ink700 }}
             >
               Designing with maps,
               <br />
@@ -514,12 +494,12 @@ export default function PerlinContoursPage() {
           <div className="mb-2 flex max-w-3xl items-end gap-5">
             <AuthorAvatar />
             <div className="border-l pl-5" style={{ borderColor: alpha(colorMap.neutral700, 0.35) }}>
-              <div className="text-[10px] uppercase tracking-[0.32em]" style={{ color: colorMap.neutral700 }}>
+              <div className="text-xs uppercase tracking-[0.3em]" style={{ color: colorMap.coral }}>
                 Author Signal / 2026
               </div>
               <p
-                className="mt-3 max-w-xl text-[11px] uppercase leading-relaxed tracking-[0.24em]"
-                style={{ color: colorMap.neutral600 }}
+                className="mt-3 max-w-xl text-sm uppercase leading-relaxed tracking-[0.18em]"
+                style={{ color: colorMap.ink700 }}
               >
                 Personal notes on visual systems, shader sketches, motion timing, and small interface decisions.
               </p>
