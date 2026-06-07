@@ -5,7 +5,6 @@ import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import AuthorAvatar from "@/components/AuthorAvatar";
 import SocialLinks from "@/components/SocialLinks";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import WritingIndexSection from "@/features/writing/WritingIndexSection";
@@ -18,6 +17,51 @@ const ABOUT_IMAGE_URLS = [
   "/img/about-02.png",
   "/img/about-03.png",
 ];
+
+function HomePortraitFrame({ imageUrl, isReducedMotion }) {
+  const { colorMap } = useProjectTheme();
+
+  return (
+    <AnimatePresence initial={false} mode="wait">
+      <motion.div
+        animate={isReducedMotion ? undefined : { opacity: 1, y: 0 }}
+        className="relative h-[clamp(104px,14vh,172px)] w-[calc(clamp(104px,14vh,172px)*1.618)]"
+        exit={isReducedMotion ? undefined : { opacity: 0, y: -18 }}
+        initial={isReducedMotion ? false : { opacity: 0, y: 34 }}
+        key={imageUrl}
+        transition={{ duration: 0.46, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div
+          className="absolute inset-3 overflow-hidden border"
+          style={{
+            backgroundColor: alpha(colorMap.coral100, 0.34),
+            borderColor: alpha(colorMap.coral, 0.58),
+          }}
+        >
+          <img
+            alt="TwinZ portrait"
+            className="h-full w-full object-cover"
+            draggable="false"
+            src={imageUrl}
+          />
+        </div>
+        {[
+          "left-0 top-0 border-l border-t",
+          "right-0 top-0 border-r border-t",
+          "bottom-0 left-0 border-b border-l",
+          "bottom-0 right-0 border-b border-r",
+        ].map((className) => (
+          <span
+            aria-hidden="true"
+            className={`absolute h-8 w-8 ${className}`}
+            key={className}
+            style={{ borderColor: colorMap.coral }}
+          />
+        ))}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 export function makeDefaultControls(colorMap = PROJECT_COLOR_MAP) {
   return {
@@ -60,7 +104,9 @@ function LiveLocationTime({ colorMap }) {
       setPointerCoordinates({ latitude, longitude });
     };
 
-    window.addEventListener("pointermove", updateFromPointer, { passive: true });
+    window.addEventListener("pointermove", updateFromPointer, {
+      passive: true,
+    });
     return () => window.removeEventListener("pointermove", updateFromPointer);
   }, []);
 
@@ -73,7 +119,8 @@ function LiveLocationTime({ colorMap }) {
 
     const hour = time.find((part) => part.type === "hour")?.value ?? "--";
     const minute = time.find((part) => part.type === "minute")?.value ?? "--";
-    const dayPeriod = time.find((part) => part.type === "dayPeriod")?.value ?? "";
+    const dayPeriod =
+      time.find((part) => part.type === "dayPeriod")?.value ?? "";
     const date = new Intl.DateTimeFormat("en-US", {
       day: "2-digit",
       month: "short",
@@ -85,26 +132,56 @@ function LiveLocationTime({ colorMap }) {
 
   return (
     <div className="space-y-12">
-      <div className="text-3xl leading-none" style={{ color: colorMap.coral }}>+</div>
+      <div className="text-3xl leading-none" style={{ color: colorMap.coral }}>
+        +
+      </div>
       <section>
-        <div className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]" style={{ borderColor: alpha(colorMap.coral, 0.5), color: colorMap.coral }}>
+        <div
+          className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]"
+          style={{
+            borderColor: alpha(colorMap.coral, 0.5),
+            color: colorMap.coral,
+          }}
+        >
           Coordinates / 坐标
         </div>
-        <p className="mt-5 text-sm font-bold tracking-[0.06em]" style={{ color: colorMap.ink800 }}>
+        <p
+          className="mt-5 text-sm font-bold tracking-[0.06em]"
+          style={{ color: colorMap.ink800 }}
+        >
           Pointer on flat earth
         </p>
-        <p className="mt-2 text-sm tracking-[0.08em]" style={{ color: colorMap.ink600 }}>
-          {formatCoordinate(pointerCoordinates.latitude, "N", "S")}, {formatCoordinate(pointerCoordinates.longitude, "E", "W")}
+        <p
+          className="mt-2 text-sm tracking-[0.08em]"
+          style={{ color: colorMap.ink600 }}
+        >
+          {formatCoordinate(pointerCoordinates.latitude, "N", "S")},{" "}
+          {formatCoordinate(pointerCoordinates.longitude, "E", "W")}
         </p>
       </section>
       <section>
-        <div className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]" style={{ borderColor: alpha(colorMap.coral, 0.5), color: colorMap.coral }}>
+        <div
+          className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]"
+          style={{
+            borderColor: alpha(colorMap.coral, 0.5),
+            color: colorMap.coral,
+          }}
+        >
           Time / 时间
         </div>
-        <p className="mt-5 text-3xl leading-none" style={{ color: colorMap.ink800 }}>
-          {timeParts.hour}:{timeParts.minute} <span className="text-sm">{timeParts.dayPeriod}</span>
+        <p
+          className="mt-5 text-3xl leading-none"
+          style={{ color: colorMap.ink800 }}
+        >
+          {timeParts.hour}:{timeParts.minute}{" "}
+          <span className="text-sm">{timeParts.dayPeriod}</span>
         </p>
-        <p className="mt-3 text-sm tracking-[0.08em]" style={{ color: colorMap.ink600 }}>{timeParts.date}</p>
+        <p
+          className="mt-3 text-sm tracking-[0.08em]"
+          style={{ color: colorMap.ink600 }}
+        >
+          {timeParts.date}
+        </p>
       </section>
     </div>
   );
@@ -301,8 +378,12 @@ function ContourField({ controlsRef, isReducedMotion }) {
   const materialRef = useRef(null);
   const pointerRef = useRef(new THREE.Vector2(0, 0));
   const pointerTargetRef = useRef(new THREE.Vector2(0, 0));
-  const backgroundColorTargetRef = useRef(new THREE.Color(controlsRef.current.backgroundColor));
-  const lineColorTargetRef = useRef(new THREE.Color(controlsRef.current.lineColor));
+  const backgroundColorTargetRef = useRef(
+    new THREE.Color(controlsRef.current.backgroundColor),
+  );
+  const lineColorTargetRef = useRef(
+    new THREE.Color(controlsRef.current.lineColor),
+  );
   const uniformsRef = useRef(null);
   const { size } = useThree();
 
@@ -316,7 +397,9 @@ function ContourField({ controlsRef, isReducedMotion }) {
       uSharpness: { value: controlsRef.current.sharpness },
       uCurvature: { value: controlsRef.current.curvature },
       uThickness: { value: controlsRef.current.thickness },
-      uBackgroundColor: { value: new THREE.Color(controlsRef.current.backgroundColor) },
+      uBackgroundColor: {
+        value: new THREE.Color(controlsRef.current.backgroundColor),
+      },
       uLineColor: { value: new THREE.Color(controlsRef.current.lineColor) },
     };
   }
@@ -394,8 +477,14 @@ function ContourField({ controlsRef, isReducedMotion }) {
     );
     backgroundColorTargetRef.current.set(controlsRef.current.backgroundColor);
     lineColorTargetRef.current.set(controlsRef.current.lineColor);
-    material.uniforms.uBackgroundColor.value.lerp(backgroundColorTargetRef.current, 1.0 - Math.exp(-delta * 10.0));
-    material.uniforms.uLineColor.value.lerp(lineColorTargetRef.current, 1.0 - Math.exp(-delta * 10.0));
+    material.uniforms.uBackgroundColor.value.lerp(
+      backgroundColorTargetRef.current,
+      1.0 - Math.exp(-delta * 10.0),
+    );
+    material.uniforms.uLineColor.value.lerp(
+      lineColorTargetRef.current,
+      1.0 - Math.exp(-delta * 10.0),
+    );
   });
 
   return (
@@ -411,7 +500,10 @@ function ContourField({ controlsRef, isReducedMotion }) {
   );
 }
 
-export const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReducedMotion }) {
+export const ContourCanvas = memo(function ContourCanvas({
+  controlsRef,
+  isReducedMotion,
+}) {
   const canvasHostRef = useRef(null);
   const [eventSource, setEventSource] = useState(null);
 
@@ -426,11 +518,18 @@ export const ContourCanvas = memo(function ContourCanvas({ controlsRef, isReduce
           dpr={[1.5, 2.5]}
           eventPrefix="client"
           eventSource={eventSource}
-          gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+          gl={{
+            antialias: true,
+            alpha: false,
+            powerPreference: "high-performance",
+          }}
           orthographic
           camera={{ position: [0, 0, 1], zoom: 1 }}
         >
-          <ContourField controlsRef={controlsRef} isReducedMotion={isReducedMotion} />
+          <ContourField
+            controlsRef={controlsRef}
+            isReducedMotion={isReducedMotion}
+          />
         </Canvas>
       ) : null}
     </div>
@@ -455,9 +554,14 @@ export default function PerlinContoursPage() {
     const updateActiveSection = () => {
       const nextSection = Math.max(
         0,
-        Math.min(CENTER_SECTION_COUNT - 1, Math.round(element.scrollTop / Math.max(element.clientHeight, 1))),
+        Math.min(
+          CENTER_SECTION_COUNT - 1,
+          Math.round(element.scrollTop / Math.max(element.clientHeight, 1)),
+        ),
       );
-      setActiveCenterSection((current) => (current === nextSection ? current : nextSection));
+      setActiveCenterSection((current) =>
+        current === nextSection ? current : nextSection,
+      );
     };
 
     updateActiveSection();
@@ -467,6 +571,31 @@ export default function PerlinContoursPage() {
     return () => {
       element.removeEventListener("scroll", updateActiveSection);
       window.removeEventListener("resize", updateActiveSection);
+    };
+  }, []);
+
+  useEffect(() => {
+    const element = centerScrollRef.current;
+    if (!element) {
+      return undefined;
+    }
+
+    const handleWheel = (event) => {
+      if (element.contains(event.target)) {
+        return;
+      }
+
+      event.preventDefault();
+      element.scrollBy({
+        top: event.deltaY,
+        behavior: "smooth",
+      });
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
     };
   }, []);
 
@@ -512,13 +641,22 @@ export default function PerlinContoursPage() {
 
         <div className="relative z-20 grid h-full grid-cols-[minmax(150px,0.42fr)_minmax(520px,1.25fr)_minmax(240px,0.46fr)] grid-rows-[auto_1fr] gap-x-8 gap-y-6 max-lg:grid-cols-1">
           <header className="relative col-span-3 grid grid-cols-[1fr_auto_1fr] items-center max-lg:col-span-1">
-            <div className="flex items-center gap-5 text-xs uppercase tracking-[0.32em]" style={{ color: colorMap.ink800 }}>
+            <div
+              className="flex items-center gap-5 text-xs uppercase tracking-[0.32em]"
+              style={{ color: colorMap.ink800 }}
+            >
               <span className="font-bold">TwinZ</span>
-              <span className="h-px w-8" style={{ backgroundColor: alpha(colorMap.coral, 0.45) }} />
+              <span
+                className="h-px w-8"
+                style={{ backgroundColor: alpha(colorMap.coral, 0.45) }}
+              />
               <span style={{ color: colorMap.coral }}>Personal Portfolio</span>
             </div>
 
-            <nav className="relative grid w-[19rem] grid-cols-3 items-center text-center text-xs uppercase tracking-[0.32em]" style={{ color: colorMap.ink700 }}>
+            <nav
+              className="relative grid w-[19rem] grid-cols-3 items-center text-center text-xs uppercase tracking-[0.32em]"
+              style={{ color: colorMap.ink700 }}
+            >
               <span
                 aria-hidden="true"
                 className="absolute -bottom-4 left-0 h-1.5 w-1.5 rounded-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
@@ -527,15 +665,9 @@ export default function PerlinContoursPage() {
                   transform: `translateX(calc(${activeCenterSection} * (19rem / 3) + (19rem / 6) - 0.1875rem))`,
                 }}
               />
-              <span className="relative z-10">
-                Home
-              </span>
-              <span className="relative z-10">
-                Notes
-              </span>
-              <span className="relative z-10">
-                About
-              </span>
+              <span className="relative z-10">Home</span>
+              <span className="relative z-10">Notes</span>
+              <span className="relative z-10">About</span>
             </nav>
 
             <div />
@@ -544,9 +676,20 @@ export default function PerlinContoursPage() {
           <aside className="hidden min-h-0 flex-col justify-between pb-7 pt-20 lg:flex">
             <LiveLocationTime colorMap={colorMap} />
             <div>
-              <div className="mb-5 font-serif text-2xl italic" style={{ color: alpha(colorMap.coral, 0.45) }}>TwinZ</div>
-              <div className="h-px w-44" style={{ backgroundColor: alpha(colorMap.coral, 0.4) }} />
-              <p className="mt-5 max-w-56 text-sm uppercase leading-relaxed tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
+              <div
+                className="mb-5 font-serif text-2xl italic"
+                style={{ color: alpha(colorMap.coral, 0.45) }}
+              >
+                TwinZ
+              </div>
+              <div
+                className="h-px w-44"
+                style={{ backgroundColor: alpha(colorMap.coral, 0.4) }}
+              />
+              <p
+                className="mt-5 max-w-56 text-sm uppercase leading-relaxed tracking-[0.18em]"
+                style={{ color: colorMap.ink700 }}
+              >
                 Designing with intention. Building with curiosity.
               </p>
             </div>
@@ -556,71 +699,98 @@ export default function PerlinContoursPage() {
             className="perlin-center-scroll min-h-0 overflow-y-auto overscroll-contain snap-y snap-mandatory max-lg:row-start-2"
             ref={centerScrollRef}
           >
-            <section className="perlin-center-panel flex h-full min-h-0 snap-start flex-col items-center justify-between py-[clamp(2rem,5vh,4.5rem)] text-center">
-              <div className="flex flex-col items-center gap-20">
-                <div className="text-sm uppercase tracking-[0.62em]" style={{ color: colorMap.coral }}>
+            <section className="perlin-center-panel flex h-full min-h-0 snap-start flex-col items-center justify-evenly py-[clamp(1rem,3.8vh,4.5rem)] text-center">
+              <div className="flex flex-col items-center gap-[clamp(1.25rem,5.2vh,5rem)]">
+                <div
+                  className="text-sm uppercase tracking-[0.62em]"
+                  style={{ color: colorMap.coral }}
+                >
                   Design / Code / Motion
                 </div>
                 <h1
-                  className="font-serif text-[clamp(4.4rem,10.4vw,11rem)] uppercase leading-[0.82] tracking-[0.035em]"
-                  style={{ color: colorMap.ink800, textShadow: `0 14px 42px ${alpha(colorMap.coral, 0.18)}` }}
+                  className="font-serif text-[clamp(3.2rem,min(9.2vw,15vh),11rem)] uppercase leading-[0.78] tracking-[0.035em]"
+                  style={{
+                    color: colorMap.ink800,
+                    textShadow: `0 14px 42px ${alpha(colorMap.coral, 0.18)}`,
+                  }}
                 >
                   Notes On Motion
                 </h1>
-                <div className="space-y-12">
-                  <div className="text-[clamp(1.55rem,2.2vw,2.6rem)] tracking-[0.22em]" style={{ color: colorMap.coral }}>
+                <div className="space-y-[clamp(1rem,3vh,3rem)]">
+                  <div
+                    className="text-[clamp(1.15rem,min(2.2vw,4.2vh),2.6rem)] tracking-[0.22em]"
+                    style={{ color: colorMap.coral }}
+                  >
                     记录灵感，探索表达的边界。
                   </div>
                   <div className="flex items-center justify-center gap-4">
-                    <span className="h-px w-16" style={{ backgroundColor: alpha(colorMap.coral, 0.46) }} />
-                    <span className="h-2 w-2 rotate-45" style={{ backgroundColor: colorMap.coral }} />
-                    <span className="h-px w-16" style={{ backgroundColor: alpha(colorMap.coral, 0.46) }} />
+                    <span
+                      className="h-px w-16"
+                      style={{ backgroundColor: alpha(colorMap.coral, 0.46) }}
+                    />
+                    <span
+                      className="h-2 w-2 rotate-45"
+                      style={{ backgroundColor: colorMap.coral }}
+                    />
+                    <span
+                      className="h-px w-16"
+                      style={{ backgroundColor: alpha(colorMap.coral, 0.46) }}
+                    />
                   </div>
-                  <p className="max-w-3xl text-base leading-loose tracking-[0.18em]" style={{ color: colorMap.ink700 }}>
-                    I design digital experiences that move with purpose and feel.
+                  <p
+                    className="max-w-3xl text-base leading-loose tracking-[0.18em]"
+                    style={{ color: colorMap.ink700 }}
+                  >
+                    I design digital experiences that move with purpose and
+                    feel.
                     <br />
-                    Where maps, motion, memory, and code meet, I build quiet systems that speak clearly.
+                    Where maps, motion, memory, and code meet, I build quiet
+                    systems that speak clearly.
                   </p>
                 </div>
-                <div className="flex flex-col items-center gap-14">
-                  <AnimatePresence initial={false} mode="wait">
-                    <motion.div
-                      animate={isReducedMotion ? undefined : { opacity: 1, y: 0 }}
-                      exit={isReducedMotion ? undefined : { opacity: 0, y: -18 }}
-                      initial={isReducedMotion ? false : { opacity: 0, y: 34 }}
-                      key={activeAboutImage}
-                      transition={{ duration: 0.46, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <AuthorAvatar
-                        caption=""
-                        imageUrl={ABOUT_IMAGE_URLS[activeAboutImage]}
-                        size="clamp(104px, 9vw, 148px)"
-                      />
-                    </motion.div>
-                  </AnimatePresence>
-                  <SocialLinks align="center" />
+                <div className="flex flex-col items-center gap-[clamp(1.25rem,3.8vh,3.5rem)]">
+                  <HomePortraitFrame
+                    imageUrl={ABOUT_IMAGE_URLS[activeAboutImage]}
+                    isReducedMotion={isReducedMotion}
+                  />
+                  <SocialLinks
+                    align="center"
+                    className="gap-4"
+                    variant="outlineSquare"
+                  />
                 </div>
-              </div>
 
-              <div
-                className="grid w-[min(960px,86vw)] grid-cols-[0.78fr_1.35fr_1.18fr_0.72fr] items-center border px-6 py-5 text-center backdrop-blur-[2px]"
-                style={{
-                  backgroundColor: alpha(colorMap.coral100, 0.34),
-                  borderColor: alpha(colorMap.coral, 0.28),
-                  color: colorMap.ink800,
-                }}
-              >
-                {[
-                  ["田 / Tian", "姓 / Surname"],
-                  ["543150640@qq.com", "邮箱 / Email"],
-                  ["15886371859", "电话 / Phone"],
-                  [`${age}`, "年龄 / Age"],
-                ].map(([value, label], index) => (
-                  <div className={index ? "border-l" : ""} key={label} style={{ borderColor: alpha(colorMap.coral, 0.22) }}>
-                    <div className="break-words px-2 text-[clamp(0.82rem,1.08vw,1.35rem)] leading-tight tracking-[0.04em]">{value}</div>
-                    <div className="mt-3 text-xs uppercase tracking-[0.2em]" style={{ color: colorMap.ink700 }}>{label}</div>
-                  </div>
-                ))}
+                <div
+                  className="grid w-[min(960px,86vw)] grid-cols-[0.78fr_1.35fr_1.18fr_0.72fr] items-center border px-6 py-5 text-center backdrop-blur-[2px]"
+                  style={{
+                    backgroundColor: alpha(colorMap.coral100, 0.34),
+                    borderColor: alpha(colorMap.coral, 0.28),
+                    color: colorMap.ink800,
+                  }}
+                >
+                  {[
+                    ["田 / Tian", "姓 / Surname"],
+                    ["543150640@qq.com", "邮箱 / Email"],
+                    ["15886371859", "电话 / Phone"],
+                    [`${age}`, "年龄 / Age"],
+                  ].map(([value, label], index) => (
+                    <div
+                      className={index ? "border-l" : ""}
+                      key={label}
+                      style={{ borderColor: alpha(colorMap.coral, 0.22) }}
+                    >
+                      <div className="break-words px-2 text-[clamp(0.82rem,1.08vw,1.35rem)] leading-tight tracking-[0.04em]">
+                        {value}
+                      </div>
+                      <div
+                        className="mt-3 text-xs uppercase tracking-[0.2em]"
+                        style={{ color: colorMap.ink700 }}
+                      >
+                        {label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
 
@@ -628,14 +798,15 @@ export default function PerlinContoursPage() {
               <WritingIndexSection />
             </section>
 
-            <section className="perlin-center-panel relative flex h-full min-h-0 snap-start items-center justify-center py-16">
+            <section className="perlin-center-panel flex h-full min-h-0 snap-start items-center justify-center py-16">
+              <div className="grid h-[min(88vh,900px)] w-full max-w-[min(94vw,1440px)] grid-cols-[clamp(3.25rem,5vw,4.75rem)_minmax(0,1fr)_clamp(3.25rem,5vw,4.75rem)] items-center gap-[clamp(0.5rem,1vw,1rem)]">
               <button
                 aria-label="Previous about image"
-                className="absolute left-5 top-1/2 z-10 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:-translate-x-1"
+                className="z-10 mx-auto grid h-14 w-14 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:-translate-x-1"
                 onClick={() => {
-                  setActiveAboutImage((current) => (
-                    current === 0 ? ABOUT_IMAGE_URLS.length - 1 : current - 1
-                  ));
+                  setActiveAboutImage((current) =>
+                    current === 0 ? ABOUT_IMAGE_URLS.length - 1 : current - 1,
+                  );
                 }}
                 style={{
                   backgroundColor: alpha(colorMap.coral100, 0.72),
@@ -648,7 +819,7 @@ export default function PerlinContoursPage() {
               </button>
 
               <div
-                className="relative grid h-[min(88vh,900px)] w-[min(94vw,1440px)] place-items-center border p-3 shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px]"
+                className="relative grid h-full min-w-0 place-items-center border p-3 shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px]"
                 style={{
                   backgroundColor: alpha(colorMap.coral100, 0.3),
                   borderColor: alpha(colorMap.coral, 0.28),
@@ -679,9 +850,11 @@ export default function PerlinContoursPage() {
 
               <button
                 aria-label="Next about image"
-                className="absolute right-5 top-1/2 z-10 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:translate-x-1"
+                className="z-10 mx-auto grid h-14 w-14 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:translate-x-1"
                 onClick={() => {
-                  setActiveAboutImage((current) => (current + 1) % ABOUT_IMAGE_URLS.length);
+                  setActiveAboutImage(
+                    (current) => (current + 1) % ABOUT_IMAGE_URLS.length,
+                  );
                 }}
                 style={{
                   backgroundColor: alpha(colorMap.coral100, 0.72),
@@ -692,13 +865,25 @@ export default function PerlinContoursPage() {
               >
                 →
               </button>
+              </div>
             </section>
           </div>
 
           <aside className="hidden min-h-0 flex-col justify-center lg:flex">
-            <div className="self-end text-3xl leading-none" style={{ color: colorMap.coral }}>+</div>
-            <section className="mt-28 border-l pl-8" style={{ borderColor: alpha(colorMap.coral, 0.42) }}>
-              <div className="text-xs uppercase tracking-[0.32em]" style={{ color: colorMap.coral }}>
+            <div
+              className="self-end text-3xl leading-none"
+              style={{ color: colorMap.coral }}
+            >
+              +
+            </div>
+            <section
+              className="mt-28 border-l pl-8"
+              style={{ borderColor: alpha(colorMap.coral, 0.42) }}
+            >
+              <div
+                className="text-xs uppercase tracking-[0.32em]"
+                style={{ color: colorMap.coral }}
+              >
                 Recent Articles
               </div>
               <div className="mt-8 space-y-5">
@@ -707,13 +892,29 @@ export default function PerlinContoursPage() {
                     className="block border-b pb-5 transition hover:translate-x-1"
                     href={`/writing/${post.slug}`}
                     key={post.slug}
-                    style={{ borderColor: alpha(colorMap.coral, 0.22), color: colorMap.ink800 }}
+                    style={{
+                      borderColor: alpha(colorMap.coral, 0.22),
+                      color: colorMap.ink800,
+                    }}
                   >
                     <div className="flex items-start gap-3">
-                      <span className="mt-1 grid h-4 w-4 place-items-center rounded-full border text-[9px]" style={{ borderColor: colorMap.coral, color: colorMap.coral }}>•</span>
+                      <span
+                        className="mt-1 grid h-4 w-4 place-items-center rounded-full border text-[9px]"
+                        style={{
+                          borderColor: colorMap.coral,
+                          color: colorMap.coral,
+                        }}
+                      >
+                        •
+                      </span>
                       <div>
-                        <h2 className="text-sm font-bold uppercase leading-snug tracking-[0.16em]">{post.title}</h2>
-                        <p className="mt-3 text-xs tracking-[0.16em]" style={{ color: colorMap.ink600 }}>
+                        <h2 className="text-sm font-bold uppercase leading-snug tracking-[0.16em]">
+                          {post.title}
+                        </h2>
+                        <p
+                          className="mt-3 text-xs tracking-[0.16em]"
+                          style={{ color: colorMap.ink600 }}
+                        >
                           {post.date} / 6 min read
                         </p>
                       </div>
@@ -721,7 +922,10 @@ export default function PerlinContoursPage() {
                   </a>
                 ))}
               </div>
-              <p className="mt-8 text-sm tracking-[0.12em]" style={{ color: colorMap.ink600 }}>
+              <p
+                className="mt-8 text-sm tracking-[0.12em]"
+                style={{ color: colorMap.ink600 }}
+              >
                 Click any article to read more.
               </p>
             </section>

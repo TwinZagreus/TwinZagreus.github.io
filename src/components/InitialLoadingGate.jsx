@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ThreeLoadingOverlay, { LOADING_OVERLAY_CONFIG } from "./ThreeLoadingOverlay";
+import RadarCursor from "./RadarCursor";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 
 const STATIC_SHELL_ID = "initial-loading-shell";
@@ -89,6 +90,7 @@ export default function InitialLoadingGate({ children, deferredControls = null }
   return (
     <>
       {isOverlayMounted ? children : null}
+      <RadarCursor />
       {isInitialLoadingComplete ? deferredControls : null}
       {!isInitialLoadingComplete ? (
         <ThreeLoadingOverlay

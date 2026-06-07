@@ -64,18 +64,23 @@ function SocialIcon({ name }) {
   );
 }
 
-export default function SocialLinks({ align = "left", className = "" }) {
+export default function SocialLinks({ align = "left", className = "", variant = "pill" }) {
   const isReducedMotion = useReducedMotion();
   const { colorMap } = useProjectTheme();
+  const isOutlineSquare = variant === "outlineSquare";
 
   return (
     <nav
       aria-label="Social links"
-      className={`pointer-events-auto relative z-30 mt-5 flex flex-wrap gap-3 ${align === "center" ? "justify-center" : ""} ${className}`}
+      className={`pointer-events-auto relative z-30 flex flex-wrap gap-3 ${align === "center" ? "justify-center" : ""} ${className}`}
     >
       {SOCIAL_LINKS.map((link, index) => (
         <motion.a
-          className="group inline-flex h-11 items-center gap-2 rounded-full border px-3.5 text-xs uppercase tracking-[0.16em] shadow-sm backdrop-blur-[2px] transition-colors duration-200"
+          className={`group inline-flex items-center justify-center gap-2 border text-xs uppercase backdrop-blur-[2px] transition-colors duration-200 ${
+            isOutlineSquare
+              ? "h-[clamp(2.25rem,5vh,2.75rem)] min-w-[8.25rem] px-[clamp(1rem,2vw,1.25rem)] tracking-[0.18em]"
+              : "h-11 rounded-full px-3.5 tracking-[0.16em] shadow-sm"
+          }`}
           href={link.href}
           initial={false}
           key={link.label}
@@ -84,15 +89,20 @@ export default function SocialLinks({ align = "left", className = "" }) {
           transition={{ delay: index * 0.04, duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           whileHover={isReducedMotion ? undefined : { y: -3 }}
           style={{
-            backgroundColor: alpha(MAIN_BACKGROUND_COLOR, 0.92),
-            borderColor: alpha(colorMap.ink950, 0.28),
-            boxShadow: `0 10px 24px ${alpha(colorMap.ink950, 0.1)}`,
+            backgroundColor: isOutlineSquare ? alpha(MAIN_BACKGROUND_COLOR, 0.34) : alpha(MAIN_BACKGROUND_COLOR, 0.92),
+            borderColor: isOutlineSquare ? alpha(colorMap.coral, 0.72) : alpha(colorMap.ink950, 0.28),
+            boxShadow: isOutlineSquare ? "none" : `0 10px 24px ${alpha(colorMap.ink950, 0.1)}`,
             color: colorMap.ink800,
           }}
         >
           <span
-            className="grid h-7 w-7 place-items-center rounded-full p-1.5 transition-transform duration-200 group-hover:rotate-[-8deg]"
-            style={{ backgroundColor: colorMap.coral, color: colorMap.coral100 }}
+            className={`grid place-items-center p-1.5 transition-transform duration-200 group-hover:rotate-[-8deg] ${
+              isOutlineSquare ? "h-6 w-6" : "h-7 w-7 rounded-full"
+            }`}
+            style={{
+              backgroundColor: isOutlineSquare ? "transparent" : colorMap.coral,
+              color: isOutlineSquare ? colorMap.coral : colorMap.coral100,
+            }}
           >
             <SocialIcon name={link.icon} />
           </span>

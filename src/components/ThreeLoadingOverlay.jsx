@@ -37,6 +37,80 @@ export const LOADING_OVERLAY_CONFIG = Object.freeze({
   easing: "power3.in", // 切片下落缓动
 });
 
+function LoadingPeripheralDetails({ color, isExiting }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="absolute inset-0 h-full w-full opacity-100 transition-opacity duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-[120ms]"
+      data-exiting={isExiting ? "true" : "false"}
+      focusable="false"
+      preserveAspectRatio="xMidYMid slice"
+      style={{
+        opacity: isExiting ? 0 : 1,
+        pointerEvents: "none",
+        zIndex: 2,
+      }}
+      viewBox="0 0 1600 900"
+    >
+      <defs>
+        <filter id="loading-detail-soften">
+          <feGaussianBlur stdDeviation="0.18" />
+        </filter>
+      </defs>
+      <g
+        fill="none"
+        filter="url(#loading-detail-soften)"
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <g opacity="0.26" strokeWidth="1.05">
+          <path d="M-70 28 C18 78 100 18 158 50 C224 86 254 20 326 10 C392 2 430 42 496 12" />
+          <path d="M-78 70 C12 130 92 72 168 90 C238 108 270 55 348 48 C404 43 452 76 520 42" />
+          <path d="M-82 112 C4 166 82 124 160 138 C236 152 280 104 352 96 C420 88 458 116 542 84" />
+          <path d="M-90 158 C-6 208 78 174 150 184 C226 194 278 156 352 144 C426 132 488 160 560 126" />
+          <path d="M-76 208 C-8 250 78 222 142 230 C228 240 282 206 350 190 C430 170 506 204 586 166" />
+        </g>
+
+        <g opacity="0.24" strokeWidth="1.05">
+          <path d="M1130 910 C1178 806 1238 808 1280 740 C1320 674 1398 696 1438 620 C1478 544 1538 508 1642 526" />
+          <path d="M1180 914 C1228 832 1270 820 1310 762 C1352 700 1410 726 1450 656 C1492 584 1540 554 1648 566" />
+          <path d="M1228 918 C1262 852 1310 850 1350 794 C1390 738 1434 764 1476 700 C1522 632 1564 604 1656 620" />
+          <path d="M1278 922 C1304 872 1344 872 1386 824 C1428 776 1472 794 1512 740 C1558 678 1598 660 1664 680" />
+          <path d="M1326 926 C1350 890 1384 898 1424 856 C1468 810 1510 832 1550 790 C1600 738 1628 734 1670 752" />
+        </g>
+
+        <path
+          d="M54 854 C186 834 176 754 300 720 C368 702 388 676 416 628"
+          opacity="0.42"
+          strokeDasharray="8 14"
+          strokeWidth="1.35"
+        />
+        <path
+          d="M1298 180 C1366 116 1434 108 1496 142 C1544 168 1562 110 1606 106"
+          opacity="0.42"
+          strokeDasharray="8 14"
+          strokeWidth="1.35"
+        />
+
+        <g opacity="0.62" strokeWidth="1.2">
+          <path d="M274 182 L274 214" />
+          <path d="M258 198 L290 198" />
+          <path d="M1432 560 L1432 592" />
+          <path d="M1416 576 L1448 576" />
+        </g>
+
+        <g opacity="0.5">
+          <circle cx="410" cy="636" r="22" strokeWidth="1" />
+          <circle cx="410" cy="636" fill={color} r="5" stroke="none" />
+          <circle cx="1434" cy="154" r="22" strokeWidth="1" />
+          <circle cx="1434" cy="154" fill={color} r="5" stroke="none" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 function ensureAreaKilometerFont() {
   if (typeof window === "undefined" || typeof FontFace === "undefined") {
     return Promise.resolve();
@@ -416,7 +490,7 @@ class LoadingOverlayScene {
     image.style.position = "absolute";
     image.style.left = "0";
     image.style.top = "0";
-    image.style.zIndex = "2";
+    image.style.zIndex = "3";
     image.style.pointerEvents = "none";
     image.style.transformOrigin = "center center";
     image.style.willChange = "opacity, transform";
@@ -900,6 +974,7 @@ export default function ThreeLoadingOverlay({
 }) {
   const containerRef = useRef(null);
   const overlayRef = useRef(null);
+  const [isExiting, setIsExiting] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
   const mergedConfig = useMemo(
@@ -933,6 +1008,7 @@ export default function ThreeLoadingOverlay({
   useEffect(() => {
     if (!isReady)
       return;
+    setIsExiting(true);
     overlayRef.current?.finish();
   }, [isReady]);
 
@@ -944,7 +1020,12 @@ export default function ThreeLoadingOverlay({
       className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
       data-initial-loading-overlay="true"
       ref={containerRef}
-    />
+    >
+      <LoadingPeripheralDetails
+        color={mergedConfig.animatedLetterColor}
+        isExiting={isExiting}
+      />
+    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BASE_COLOR_LIST, MAIN_BACKGROUND_COLOR } from "@/lib/theme";
@@ -239,67 +239,75 @@ export default function ThemeSetting() {
           })}
         </div>
 
-        <button
-          aria-expanded={isLyricsOpen}
-          aria-label={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
-          className="grid h-12 w-12 place-items-center rounded-full border text-[11px] uppercase tracking-[0.18em] transition duration-200 ease-out hover:scale-105 sm:h-14 sm:w-14"
-          onClick={() => setIsLyricsOpen((current) => !current)}
+        <div
+          className="flex items-center gap-1 rounded-full border p-1.5 shadow-[0_18px_42px_rgba(101,72,26,0.18)] backdrop-blur-[6px] sm:gap-1.5 sm:p-2"
           style={{
-            backgroundColor: MAIN_BACKGROUND_COLOR,
-            borderColor: isLyricsOpen ? themeOption.color : "rgba(25, 11, 10, 0.16)",
-            boxShadow: `0 14px 28px ${themeOption.color}24`,
-            color: themeOption.color,
+            backgroundColor: "rgba(242, 239, 231, 0.78)",
+            borderColor: "rgba(25, 11, 10, 0.08)",
           }}
-          title={isLyricsOpen ? "收起歌词" : "展开歌词"}
-          type="button"
         >
-          {isLyricsOpen ? "收" : "词"}
-        </button>
+          <button
+            aria-expanded={isLyricsOpen}
+            aria-label={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
+            className="grid h-11 w-11 place-items-center rounded-full border text-[11px] uppercase tracking-[0.18em] transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
+            onClick={() => setIsLyricsOpen((current) => !current)}
+            style={{
+              backgroundColor: MAIN_BACKGROUND_COLOR,
+              borderColor: isLyricsOpen ? themeOption.color : "rgba(25, 11, 10, 0.14)",
+              boxShadow: isLyricsOpen ? `0 10px 24px ${themeOption.color}20` : "none",
+              color: themeOption.color,
+            }}
+            title={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
+            type="button"
+          >
+            {isLyricsOpen ? "收" : "词"}
+          </button>
 
-        <button
-          aria-expanded={isOpen}
-          aria-label="Toggle theme setting"
-          className="relative grid h-12 w-12 place-items-center border-0 bg-transparent p-0 transition duration-200 ease-out hover:scale-105 sm:h-14 sm:w-14"
-          onClick={() => setIsOpen((current) => !current)}
-          style={{ filter: `drop-shadow(0 14px 24px ${themeOption.color}33)` }}
-          type="button"
-        >
-          <CircularKnob
-            color={themeOption.color}
-            label="Song progress"
-            onChange={updateSongProgress}
-            value={progress}
-          />
-          <img
-            alt=""
-            className="pointer-events-none h-full w-full object-contain"
-            draggable={false}
-            ref={settingIconRef}
-            src={iconSrc}
-          />
-        </button>
+          <button
+            aria-expanded={isOpen}
+            aria-label="Toggle theme setting"
+            className="relative grid h-11 w-11 place-items-center border-0 bg-transparent p-0 transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
+            onClick={() => setIsOpen((current) => !current)}
+            style={{ filter: `drop-shadow(0 10px 18px ${themeOption.color}28)` }}
+            type="button"
+          >
+            <CircularKnob
+              color={themeOption.color}
+              label="Song progress"
+              onChange={updateSongProgress}
+              value={progress}
+            />
+            <img
+              alt=""
+              className="pointer-events-none h-full w-full object-contain"
+              draggable={false}
+              ref={settingIconRef}
+              src={iconSrc}
+            />
+          </button>
 
-        <button
-          aria-label={isPlaying ? "Pause audio" : "Play audio"}
-          aria-pressed={isPlaying}
-          className="relative grid h-12 w-12 place-items-center border-0 bg-transparent p-0 transition duration-200 ease-out hover:scale-105 sm:h-14 sm:w-14"
-          onClick={togglePlayback}
-          style={{ filter: `drop-shadow(0 14px 24px ${themeOption.color}33)` }}
-          type="button"
-        >
-          <CircularKnob
-            color={themeOption.color}
-            label="Audio volume"
-            onChange={updateVolume}
-            value={volume}
-          />
-          <PlayPauseMorphIcon
-            className="pointer-events-none h-full w-full"
-            color={themeOption.color}
-            isPlaying={isPlaying}
-            size="100%"
-          />
-        </button>
+          <button
+            aria-label={isPlaying ? "Pause audio" : "Play audio"}
+            aria-pressed={isPlaying}
+            className="relative grid h-11 w-11 place-items-center border-0 bg-transparent p-0 transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
+            onClick={togglePlayback}
+            style={{ filter: `drop-shadow(0 10px 18px ${themeOption.color}28)` }}
+            type="button"
+          >
+            <CircularKnob
+              color={themeOption.color}
+              label="Audio volume"
+              onChange={updateVolume}
+              value={volume}
+            />
+            <PlayPauseMorphIcon
+              className="pointer-events-none h-full w-full"
+              color={themeOption.color}
+              isPlaying={isPlaying}
+              size="100%"
+            />
+          </button>
+        </div>
       </div>
     </>
   );
