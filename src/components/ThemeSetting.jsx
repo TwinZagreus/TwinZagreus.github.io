@@ -1,19 +1,15 @@
 ﻿"use client";
 
+import { alpha } from "@mui/material/styles";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BASE_COLOR_LIST, MAIN_BACKGROUND_COLOR } from "@/lib/theme";
+import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import CircularKnob from "./CircularKnob";
-import LyricsPanel from "./LyricsPanel";
 import PlayPauseMorphIcon from "./PlayPauseMorphIcon";
 
 const ICON_URL = "/img/final-single-circle.svg";
-const ICON_ACCENT_COLOR = "#F2555A";
-const VOLUME_CURVE_EXPONENT = 3.32;
-
-function knobValueToAudioVolume(value) {
-  return Math.max(0, Math.min(1, value)) ** VOLUME_CURVE_EXPONENT;
-}
+const ICON_ACCENT_COLOR = BASE_COLOR_LIST[3].color;
 
 function makeSvgDataUrl(svgText) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
@@ -54,56 +50,77 @@ function useTintedTwinIcon(accentColor) {
   }, [accentColor, svgText]);
 }
 
+function LyricsToggleIcon({ color, isOpen }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      {isOpen ? (
+        <>
+          <path
+            d="M6 7.5H18M6 12H14M6 16.5H10"
+            stroke={color}
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="M15.5 14.5L19 18M19 14.5L15.5 18"
+            stroke={color}
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+        </>
+      ) : (
+        <>
+          <path
+            d="M7 7.5H17M7 12H14.5M7 16.5H11.5"
+            stroke={color}
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="M16.2 13.8C17.9 13.8 19.2 15 19.2 16.5C19.2 18 17.9 19.2 16.2 19.2C15.5 19.2 14.9 19 14.4 18.7L12.8 19.1L13.3 17.8C13.1 17.4 13 17 13 16.5C13 15 14.4 13.8 16.2 13.8Z"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
+          />
+        </>
+      )}
+    </svg>
+  );
+}
+
 export default function ThemeSetting() {
-  const { setThemeIndex, themeIndex, themeOption } = useProjectTheme();
+  const {
+    beginSilentSeek,
+    endSilentSeek,
+    isLyricsOpen,
+    isPlaying,
+    progress,
+    seekToProgress,
+    setIsLyricsOpen,
+    setVolume,
+    togglePlayback,
+    volume,
+  } = useAudioPlayer();
+  const { colorMap, setThemeIndex, themeIndex, themeOption } = useProjectTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLyricsOpen, setIsLyricsOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(0.5);
-  const audioRef = useRef(null);
   const rotationFrameRef = useRef(0);
   const rotationPreviousTimeRef = useRef(0);
   const rotationValueRef = useRef(0);
   const settingIconRef = useRef(null);
   const rootRef = useRef(null);
   const iconSrc = useTintedTwinIcon(themeOption.color);
-
-  useEffect(() => {
-    const audio = new Audio("/audio/Got%20It%203.m4a");
-    audio.loop = true;
-    audio.volume = knobValueToAudioVolume(volume);
-    audioRef.current = audio;
-
-    const updateProgress = () => {
-      if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
-        setProgress(0);
-        return;
-      }
-      setProgress(audio.currentTime / audio.duration);
-    };
-    const handleEnded = () => setProgress(0);
-    const handleLoadedMetadata = updateProgress;
-    const handleTimeUpdate = updateProgress;
-
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-
-    return () => {
-      audio.pause();
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audioRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = knobValueToAudioVolume(volume);
-    }
-  }, [volume]);
+  const controlButtonStyle = {
+    backgroundColor: colorMap.coral100,
+    borderColor: alpha(colorMap.ink950, 0.24),
+    boxShadow: `0 10px 24px ${alpha(colorMap.ink950, 0.1)}`,
+    color: themeOption.color,
+  };
 
   useEffect(() => {
     if (!isPlaying) {
@@ -148,45 +165,9 @@ export default function ThemeSetting() {
     };
   }, [isOpen]);
 
-  const togglePlayback = async () => {
-    const audio = audioRef.current;
-    if (!audio)
-      return;
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-      return;
-    }
-
-    try {
-      await audio.play();
-      setIsPlaying(true);
-    } catch (error) {
-      console.warn("[ThemeSetting] Unable to play audio", error);
-      setIsPlaying(false);
-    }
-  };
-
-  const updateSongProgress = (nextProgress) => {
-    const audio = audioRef.current;
-    setProgress(nextProgress);
-    if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0)
-      return;
-    audio.currentTime = audio.duration * nextProgress;
-  };
-
-  const updateVolume = (nextVolume) => {
-    setVolume(nextVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = knobValueToAudioVolume(nextVolume);
-    }
-  };
-
   return (
     <>
-      <LyricsPanel isOpen={isLyricsOpen} />
-      <div className="fixed bottom-6 right-6 z-50 flex items-end gap-3 sm:bottom-6 sm:right-6" ref={rootRef}>
+      <div className="fixed bottom-[50px] right-[50px] z-50 flex items-end gap-3" ref={rootRef}>
         <div
           aria-hidden={!isOpen}
           aria-label="Theme options"
@@ -211,11 +192,11 @@ export default function ThemeSetting() {
                   "--target-y-desktop": `${itemIndex * 64}px`,
                   "--target-y-mobile": `${itemIndex * 56}px`,
                   backgroundColor: MAIN_BACKGROUND_COLOR,
-                  borderColor: isActive ? option.color : "rgba(25, 11, 10, 0.16)",
+                  borderColor: isActive ? option.color : alpha(colorMap.ink950, 0.16),
                   boxShadow: isActive
-                    ? `0 0 0 4px ${option.color}22, 0 16px 34px rgba(25, 11, 10, 0.2)`
-                    : "0 12px 26px rgba(25, 11, 10, 0.12)",
-                  color: "#190B0A",
+                    ? `0 0 0 4px ${alpha(option.color, 0.14)}, 0 16px 34px ${alpha(colorMap.ink950, 0.2)}`
+                    : `0 12px 26px ${alpha(colorMap.ink950, 0.12)}`,
+                  color: colorMap.ink950,
                   animationDelay: isOpen ? `${itemIndex * 30}ms` : "0ms",
                   transitionDelay: isOpen
                     ? `${itemIndex * 28}ms`
@@ -228,8 +209,11 @@ export default function ThemeSetting() {
                   style={{ backgroundColor: option.color }}
                 />
                 <span
-                  className="relative grid h-6 w-6 place-items-center rounded-full text-[11px] tracking-[0.08em] text-white"
-                  style={{ backgroundColor: "rgba(25, 11, 10, 0.64)" }}
+                  className="relative grid h-6 w-6 place-items-center rounded-full text-[11px] tracking-[0.08em]"
+                  style={{
+                    backgroundColor: alpha(colorMap.ink950, 0.64),
+                    color: colorMap.coral100,
+                  }}
                 >
                   {option.title}
                 </span>
@@ -240,41 +224,30 @@ export default function ThemeSetting() {
         </div>
 
         <div
-          className="flex items-center gap-1 rounded-full border p-1.5 shadow-[0_18px_42px_rgba(101,72,26,0.18)] backdrop-blur-[6px] sm:gap-1.5 sm:p-2"
+          className="flex items-center gap-1 rounded-full border p-1.5 backdrop-blur-[6px] sm:gap-1.5 sm:p-2"
           style={{
-            backgroundColor: "rgba(242, 239, 231, 0.78)",
-            borderColor: "rgba(25, 11, 10, 0.08)",
+            backgroundColor: alpha(colorMap.ink950, 0.16),
+            borderColor: alpha(colorMap.ink950, 0.42),
+            boxShadow: `0 18px 42px ${alpha(colorMap.ink950, 0.24)}`,
           }}
         >
           <button
-            aria-expanded={isLyricsOpen}
-            aria-label={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
-            className="grid h-11 w-11 place-items-center rounded-full border text-[11px] uppercase tracking-[0.18em] transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
-            onClick={() => setIsLyricsOpen((current) => !current)}
-            style={{
-              backgroundColor: MAIN_BACKGROUND_COLOR,
-              borderColor: isLyricsOpen ? themeOption.color : "rgba(25, 11, 10, 0.14)",
-              boxShadow: isLyricsOpen ? `0 10px 24px ${themeOption.color}20` : "none",
-              color: themeOption.color,
-            }}
-            title={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
-            type="button"
-          >
-            {isLyricsOpen ? "收" : "词"}
-          </button>
-
-          <button
             aria-expanded={isOpen}
             aria-label="Toggle theme setting"
-            className="relative grid h-11 w-11 place-items-center border-0 bg-transparent p-0 transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
+            className="relative grid h-11 w-11 place-items-center rounded-full border p-0 transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
             onClick={() => setIsOpen((current) => !current)}
-            style={{ filter: `drop-shadow(0 10px 18px ${themeOption.color}28)` }}
+            style={controlButtonStyle}
             type="button"
           >
             <CircularKnob
               color={themeOption.color}
+              hitAreaColor={colorMap.coral100}
               label="Song progress"
-              onChange={updateSongProgress}
+              onChange={(nextProgress) => seekToProgress(nextProgress, { silent: false })}
+              onInteractionEnd={endSilentSeek}
+              onInteractionStart={beginSilentSeek}
+              thumbColor={colorMap.coral100}
+              trackColor={alpha(colorMap.ink950, 0.28)}
               value={progress}
             />
             <img
@@ -289,15 +262,18 @@ export default function ThemeSetting() {
           <button
             aria-label={isPlaying ? "Pause audio" : "Play audio"}
             aria-pressed={isPlaying}
-            className="relative grid h-11 w-11 place-items-center border-0 bg-transparent p-0 transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
+            className="relative grid h-11 w-11 place-items-center rounded-full border p-0 transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
             onClick={togglePlayback}
-            style={{ filter: `drop-shadow(0 10px 18px ${themeOption.color}28)` }}
+            style={controlButtonStyle}
             type="button"
           >
             <CircularKnob
               color={themeOption.color}
+              hitAreaColor={colorMap.coral100}
               label="Audio volume"
-              onChange={updateVolume}
+              onChange={setVolume}
+              thumbColor={colorMap.coral100}
+              trackColor={alpha(colorMap.ink950, 0.28)}
               value={volume}
             />
             <PlayPauseMorphIcon
@@ -306,6 +282,24 @@ export default function ThemeSetting() {
               isPlaying={isPlaying}
               size="100%"
             />
+          </button>
+
+          <button
+            aria-expanded={isLyricsOpen}
+            aria-label={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
+            className="grid h-11 w-11 place-items-center rounded-full border transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
+            onClick={() => setIsLyricsOpen((current) => !current)}
+            style={{
+              ...controlButtonStyle,
+              borderColor: isLyricsOpen ? themeOption.color : controlButtonStyle.borderColor,
+              boxShadow: isLyricsOpen
+                ? `0 10px 24px ${alpha(colorMap.coral, 0.18)}`
+                : controlButtonStyle.boxShadow,
+            }}
+            title={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
+            type="button"
+          >
+            <LyricsToggleIcon color={themeOption.color} isOpen={isLyricsOpen} />
           </button>
         </div>
       </div>

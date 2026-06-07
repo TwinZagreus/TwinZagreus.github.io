@@ -1,5 +1,8 @@
 "use client";
 
+import { alpha } from "@mui/material/styles";
+import { MAIN_BACKGROUND_COLOR, PROJECT_COLOR_MAP } from "@/lib/theme";
+
 const TAU = Math.PI * 2;
 
 function clamp01(value) {
@@ -25,9 +28,14 @@ function eventToValue(event, element) {
 }
 
 export default function CircularKnob({
-  color = "#F2555A",
+  color = PROJECT_COLOR_MAP.coral,
+  hitAreaColor = PROJECT_COLOR_MAP.coral100,
   label,
   onChange,
+  onInteractionEnd,
+  onInteractionStart,
+  thumbColor = MAIN_BACKGROUND_COLOR,
+  trackColor = alpha(PROJECT_COLOR_MAP.ink950, 0.16),
   value = 0,
 }) {
   const normalizedValue = clamp01(value);
@@ -44,6 +52,7 @@ export default function CircularKnob({
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
+    onInteractionStart?.();
     updateFromEvent(event);
   };
 
@@ -61,6 +70,13 @@ export default function CircularKnob({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    onInteractionEnd?.();
+  };
+
+  const handlePointerCancel = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onInteractionEnd?.();
   };
 
   return (
@@ -77,9 +93,11 @@ export default function CircularKnob({
         fill="none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
+        onPointerCancel={handlePointerCancel}
         onPointerUp={handlePointerUp}
         r={radius}
-        stroke="transparent"
+        stroke={hitAreaColor}
+        strokeOpacity={0}
         strokeWidth="12"
         style={{ pointerEvents: "stroke" }}
       />
@@ -88,7 +106,7 @@ export default function CircularKnob({
         cy={center}
         fill="none"
         r={radius}
-        stroke="rgba(25,11,10,0.16)"
+        stroke={trackColor}
         strokeWidth="1.5"
       />
       <circle
@@ -109,9 +127,10 @@ export default function CircularKnob({
       <circle
         cx={point.x}
         cy={point.y}
-        fill="#F2EFE7"
+        fill={thumbColor}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
+        onPointerCancel={handlePointerCancel}
         onPointerUp={handlePointerUp}
         r="4"
         stroke={color}

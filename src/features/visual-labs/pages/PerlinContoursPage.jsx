@@ -5,8 +5,10 @@ import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import LyricsPanel from "@/components/LyricsPanel";
 import SocialLinks from "@/components/SocialLinks";
 import TransitionLink from "@/components/TransitionLink";
+import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import WritingIndexSection from "@/features/writing/WritingIndexSection";
 import { getRecentWritingPosts } from "@/features/writing/postIndex";
@@ -540,6 +542,13 @@ export const ContourCanvas = memo(function ContourCanvas({
 
 export default function PerlinContoursPage() {
   const isReducedMotion = useReducedMotion();
+  const {
+    currentTime,
+    duration,
+    isLyricsOpen,
+    progress,
+    seekToProgress,
+  } = useAudioPlayer();
   const { colorMap } = useProjectTheme();
   const centerScrollRef = useRef(null);
   const recentPosts = useMemo(() => getRecentWritingPosts(4), []);
@@ -750,17 +759,17 @@ export default function PerlinContoursPage() {
                     systems that speak clearly.
                   </p>
                 </div>
-                {/* <div className="flex flex-col items-center gap-[clamp(1.25rem,3.8vh,3.5rem)]">
-                  <HomePortraitFrame
+                <div className="flex flex-col items-center gap-[clamp(1.25rem,3.8vh,3.5rem)]">
+                  {/* <HomePortraitFrame
                     imageUrl={ABOUT_IMAGE_URLS[activeAboutImage]}
                     isReducedMotion={isReducedMotion}
-                  />
+                  /> */}
                   <SocialLinks
                     align="center"
                     className="gap-4"
                     variant="outlineSquare"
                   />
-                </div> */}
+                </div>
 
                 <div
                   className="grid w-[min(960px,86vw)] grid-cols-[0.78fr_1.35fr_1.18fr_0.72fr] items-center border px-6 py-5 text-center backdrop-blur-[2px]"
@@ -882,13 +891,24 @@ export default function PerlinContoursPage() {
               className="mt-28 border-l pl-8"
               style={{ borderColor: alpha(colorMap.coral, 0.42) }}
             >
-              <div
-                className="text-xs uppercase tracking-[0.32em]"
-                style={{ color: colorMap.coral }}
+              <AnimatePresence initial={false} mode="wait">
+                {isLyricsOpen ? (
+                  <LyricsPanel
+                    currentTime={currentTime}
+                    duration={duration}
+                    key="lyrics"
+                    onSeekToProgress={seekToProgress}
+                    progress={progress}
+                  />
+                ) : (
+              <motion.div
+                animate={isReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                className="mt-8 space-y-5"
+                exit={isReducedMotion ? { opacity: 0 } : { opacity: 0, y: 18 }}
+                initial={isReducedMotion ? false : { opacity: 0, y: 22 }}
+                key="articles"
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               >
-                Recent Articles
-              </div>
-              <div className="mt-8 space-y-5">
                 {recentPosts.map((post) => (
                   <TransitionLink
                     className="block border-b pb-5 transition hover:translate-x-1"
@@ -924,13 +944,9 @@ export default function PerlinContoursPage() {
                     </div>
                   </TransitionLink>
                 ))}
-              </div>
-              <p
-                className="mt-8 text-sm tracking-[0.12em]"
-                style={{ color: colorMap.ink600 }}
-              >
-                Click any article to read more.
-              </p>
+              </motion.div>
+                )}
+              </AnimatePresence>
             </section>
           </aside>
         </div>

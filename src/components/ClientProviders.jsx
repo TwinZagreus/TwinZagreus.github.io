@@ -3,6 +3,7 @@
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import dynamic from "next/dynamic";
+import { AudioPlayerProvider } from "@/context/AudioPlayerContext";
 import { ProjectThemeProvider } from "../context/ProjectThemeContext";
 import InitialLoadingGate from "./InitialLoadingGate";
 import { RouteTransitionProvider } from "./RouteTransitionProvider";
@@ -24,12 +25,14 @@ export default function ClientProviders({ children }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ProjectThemeProvider>
-        <RouteTransitionProvider>
-          <PersistentPerlinBackdrop />
-          <InitialLoadingGate deferredControls={<ThemeSetting />}>
-            {children}
-          </InitialLoadingGate>
-        </RouteTransitionProvider>
+        <AudioPlayerProvider>
+          <RouteTransitionProvider>
+            <PersistentPerlinBackdrop />
+            <InitialLoadingGate deferredControls={<ThemeSetting />}>
+              {children}
+            </InitialLoadingGate>
+          </RouteTransitionProvider>
+        </AudioPlayerProvider>
       </ProjectThemeProvider>
     </ThemeProvider>
   );
