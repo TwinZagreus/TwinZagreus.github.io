@@ -7,6 +7,8 @@ import * as THREE from "three";
 const AREA_FONT_FAMILY = '"AreaKilometer50", "Segoe UI", sans-serif';
 const AREA_FONT_URL = "/font/AreaKilometer50-gxmEq.otf";
 let areaFontPromise = null;
+const tintedSvgCache = new Map();
+const DEBUG_LOGO_LAYOUT = false;
 
 export const LOADING_OVERLAY_CONFIG = Object.freeze({
   backgroundColor: PROJECT_COLOR_MAP.coral100, // Loading 全屏背景色
@@ -109,6 +111,30 @@ function LoadingPeripheralDetails({ color, isExiting }) {
       </g>
     </svg>
   );
+}
+
+function makeSvgDataUrl(svgText) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
+}
+
+function tintSvgText(svgText, color) {
+  return svgText
+    .replaceAll("#000000", color)
+    .replaceAll("#F2555A", color)
+    .replaceAll("#FF6F61", color);
+}
+
+async function getTintedSvgDataUrl(url, color) {
+  const cacheKey = `${url}::${color}`;
+  if (tintedSvgCache.has(cacheKey)) {
+    return tintedSvgCache.get(cacheKey);
+  }
+
+  const response = await fetch(url);
+  const svgText = await response.text();
+  const dataUrl = makeSvgDataUrl(tintSvgText(svgText, color));
+  tintedSvgCache.set(cacheKey, dataUrl);
+  return dataUrl;
 }
 
 function ensureAreaKilometerFont() {
@@ -512,7 +538,16 @@ class LoadingOverlayScene {
 
     this.zDomImage = image;
     this.container.appendChild(image);
-    console.info("[ThreeLoadingOverlay] Z SVG DOM asset mounted", url);
+    getTintedSvgDataUrl(url, this.activeConfig.animatedLetterColor)
+      .then((dataUrl) => {
+        if (this.isDisposed || this.zAssetUrl !== url)
+          return;
+
+        image.src = dataUrl;
+      })
+      .catch((error) => {
+        console.warn("[ThreeLoadingOverlay] Failed to tint Z SVG asset", error);
+      });
   }
 
   clearSlices() {
@@ -693,12 +728,14 @@ class LoadingOverlayScene {
     };
     this.syncZDomImage();
 
-    this.logLogoScreenPosition({
-      compositeBounds: finalCompositeBounds,
-      twinMesh,
-      viewport: this.getViewport(),
-      zMesh,
-    });
+    if (DEBUG_LOGO_LAYOUT) {
+      this.logLogoScreenPosition({
+        compositeBounds: finalCompositeBounds,
+        twinMesh,
+        viewport: this.getViewport(),
+        zMesh,
+      });
+    }
   }
 
   logLogoScreenPosition({ viewport, twinMesh, zMesh, compositeBounds }) {
@@ -790,7 +827,8 @@ class LoadingOverlayScene {
     const zPhaseDuration = Math.max(0.08, this.activeConfig.zFadeDuration ?? 0.16);
     const twinPhaseDuration = logoDisappearDuration;
     const targetCenterX = 0;
-    const slicesStartAt = 0;
+    const logoEndAt = twinPhaseDuration + zPhaseDuration;
+    const slicesStartAt = logoEndAt;
     const slicesEndAt =
       slicesStartAt
       + this.activeConfig.sliceStagger * Math.max(0, this.slices.length - 1)
@@ -802,6 +840,69 @@ class LoadingOverlayScene {
         this.onFinish();
       },
     });
+
+    this.exitTimeline.to(
+      this.logoAssets.twinMesh.position,
+      {
+        duration: twinPhaseDuration,
+        ease: "power2.inOut",
+        x: targetCenterX,
+      },
+      0,
+    );
+
+    this.exitTimeline.to(
+      this.logoAssets.zMesh.position,
+      {
+        duration: twinPhaseDuration,
+        ease: "power2.inOut",
+        x: targetCenterX,
+      },
+      0,
+    );
+
+    this.exitTimeline.to(
+      this.logoAssets.twinMaterial,
+      {
+        duration: twinPhaseDuration * 0.6,
+        ease: "power2.in",
+        opacity: 0,
+      },
+      twinPhaseDuration * 0.34,
+    );
+
+    this.exitTimeline.to(
+      this.logoAssets.twinMesh.scale,
+      {
+        duration: twinPhaseDuration * 0.68,
+        ease: "power2.in",
+        x: 0.12,
+        y: 0.92,
+      },
+      twinPhaseDuration * 0.1,
+    );
+
+    this.exitTimeline.to(
+      this.logoAssets.zMaterial,
+      {
+        duration: zPhaseDuration,
+        ease: "power2.out",
+        opacity: 0,
+      },
+      twinPhaseDuration,
+    );
+
+    if (this.zDomImage && this.logoAssets.zUsesSvgAsset) {
+      this.exitTimeline.to(
+        this.zDomImage,
+        {
+          duration: zPhaseDuration,
+          ease: "power2.out",
+          opacity: 0,
+        },
+        twinPhaseDuration,
+      );
+    }
 
     this.slices.forEach((slice, index) => {
       const rotationTarget = THREE.MathUtils.randFloatSpread(0.18);
@@ -835,69 +936,6 @@ class LoadingOverlayScene {
       },
       slicesEndAt + 0.02,
     );
-
-    this.exitTimeline.to(
-      this.logoAssets.twinMesh.position,
-      {
-        duration: twinPhaseDuration,
-        ease: "power2.inOut",
-        x: targetCenterX,
-      },
-      slicesEndAt,
-    );
-
-    this.exitTimeline.to(
-      this.logoAssets.zMesh.position,
-      {
-        duration: twinPhaseDuration,
-        ease: "power2.inOut",
-        x: targetCenterX,
-      },
-      slicesEndAt,
-    );
-
-    this.exitTimeline.to(
-      this.logoAssets.twinMaterial,
-      {
-        duration: twinPhaseDuration * 0.6,
-        ease: "power2.in",
-        opacity: 0,
-      },
-      slicesEndAt + twinPhaseDuration * 0.34,
-    );
-
-    this.exitTimeline.to(
-      this.logoAssets.twinMesh.scale,
-      {
-        duration: twinPhaseDuration * 0.68,
-        ease: "power2.in",
-        x: 0.12,
-        y: 0.92,
-      },
-      slicesEndAt + twinPhaseDuration * 0.1,
-    );
-
-    this.exitTimeline.to(
-      this.logoAssets.zMaterial,
-      {
-        duration: zPhaseDuration,
-        ease: "power2.out",
-        opacity: 0,
-      },
-      slicesEndAt + twinPhaseDuration,
-    );
-
-    if (this.zDomImage && this.logoAssets.zUsesSvgAsset) {
-      this.exitTimeline.to(
-        this.zDomImage,
-        {
-          duration: zPhaseDuration,
-          ease: "power2.out",
-          opacity: 0,
-        },
-        slicesEndAt + twinPhaseDuration,
-      );
-    }
   }
 
   handleResize() {

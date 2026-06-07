@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import SocialLinks from "@/components/SocialLinks";
+import TransitionLink from "@/components/TransitionLink";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import WritingIndexSection from "@/features/writing/WritingIndexSection";
 import { getRecentWritingPosts } from "@/features/writing/postIndex";
@@ -422,7 +423,7 @@ function ContourField({ controlsRef, isReducedMotion }) {
       pointerTargetRef.current.set(0, 0);
     };
 
-    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerleave", handlePointerLeave);
 
     return () => {
@@ -515,9 +516,10 @@ export const ContourCanvas = memo(function ContourCanvas({
     <div aria-hidden className="h-screen h-[100dvh]" ref={canvasHostRef}>
       {eventSource ? (
         <Canvas
-          dpr={[1.5, 2.5]}
+          dpr={[1, 1.6]}
           eventPrefix="client"
           eventSource={eventSource}
+          frameloop={isReducedMotion ? "demand" : "always"}
           gl={{
             antialias: true,
             alpha: false,
@@ -748,7 +750,7 @@ export default function PerlinContoursPage() {
                     systems that speak clearly.
                   </p>
                 </div>
-                <div className="flex flex-col items-center gap-[clamp(1.25rem,3.8vh,3.5rem)]">
+                {/* <div className="flex flex-col items-center gap-[clamp(1.25rem,3.8vh,3.5rem)]">
                   <HomePortraitFrame
                     imageUrl={ABOUT_IMAGE_URLS[activeAboutImage]}
                     isReducedMotion={isReducedMotion}
@@ -758,7 +760,7 @@ export default function PerlinContoursPage() {
                     className="gap-4"
                     variant="outlineSquare"
                   />
-                </div>
+                </div> */}
 
                 <div
                   className="grid w-[min(960px,86vw)] grid-cols-[0.78fr_1.35fr_1.18fr_0.72fr] items-center border px-6 py-5 text-center backdrop-blur-[2px]"
@@ -888,10 +890,11 @@ export default function PerlinContoursPage() {
               </div>
               <div className="mt-8 space-y-5">
                 {recentPosts.map((post) => (
-                  <a
+                  <TransitionLink
                     className="block border-b pb-5 transition hover:translate-x-1"
                     href={`/writing/${post.slug}`}
                     key={post.slug}
+                    label="Opening field note"
                     style={{
                       borderColor: alpha(colorMap.coral, 0.22),
                       color: colorMap.ink800,
@@ -919,7 +922,7 @@ export default function PerlinContoursPage() {
                         </p>
                       </div>
                     </div>
-                  </a>
+                  </TransitionLink>
                 ))}
               </div>
               <p
