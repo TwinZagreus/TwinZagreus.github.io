@@ -6,5 +6,4 @@ name = "twinzagreus"
 compatibility_date = "2026-06-08"
 pages_build_output_dir = "./out"
 
-# Uncomment and set after you register:
-# account_id = "YOUR_ACCOUNT_ID"
+account_id = "bd09383b155a1b82eb6e790e2f2f4f33"
