@@ -34,4 +34,5 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: bd09383b155a1b82eb6e790e2f2f4f33
           command: pages deploy ./out --project-name=twinzagreus
