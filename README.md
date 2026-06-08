@@ -4,6 +4,11 @@
 
 A **Next.js App Router** personal visual blog and Three.js playground with Perlin contour backgrounds, global loading, theme switching, audio controls, Markdown writing pages, and WebGL visual experiments.
 
+## 在线访问 / Live Sites
+
+- GitHub Pages: [twinzagreus.github.io](https://twinzagreus.github.io/)
+- Cloudflare Pages: [twinzagreus.pages.dev](https://twinzagreus.pages.dev/)
+
 ## 路由 / Routes
 
 - `/` - 默认首页，包含 Perlin 背景、个人主页首屏和下滚博客目录。
@@ -91,26 +96,15 @@ out/
 
 ## GitHub Pages 部署 / GitHub Pages Deployment
 
-这个项目不需要后端，适合部署到免费的 GitHub Pages。
+push 到 `main` 分支后，GitHub Actions 自动构建并部署，详见 `.github/workflows/deploy.yml`。
 
-This project does not require a backend and can be hosted on GitHub Pages.
+Pushing to `main` triggers automatic build and deployment via GitHub Actions. See `.github/workflows/deploy.yml`.
 
-推荐方式：
+## Cloudflare Pages 部署 / Cloudflare Pages Deployment
 
-Recommended setup:
+同时部署到 Cloudflare Pages，国内访问更快。详见 `.github/workflows/deploy-cloudflare.yml`。
 
-- 如果使用个人主页仓库 `username.github.io`，直接发布 `out/`。
-  If using a user site repository named `username.github.io`, publish `out/` directly.
-- 如果使用项目页 `username.github.io/repo-name/`，需要额外配置 `basePath` 和静态资源路径。
-  If using a project page like `username.github.io/repo-name/`, configure `basePath` and public asset paths first.
-
-当前默认配置更适合：
-
-The current default config is best suited for:
-
-```text
-https://username.github.io/
-```
+Also deployed to Cloudflare Pages for faster access from China. See `.github/workflows/deploy-cloudflare.yml`.
 
 ## 写文章 / Writing Posts
 
