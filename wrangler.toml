@@ -1,0 +1,10 @@
+# Cloudflare Pages project config
+# Replace YOUR_ACCOUNT_ID with your Cloudflare Account ID
+# Find it at: dash.cloudflare.com → right sidebar → Account ID
+
+name = "twinzagreus"
+compatibility_date = "2026-06-08"
+pages_build_output_dir = "./out"
+
+# Uncomment and set after you register:
+# account_id = "YOUR_ACCOUNT_ID"
