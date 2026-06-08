@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-const AUDIO_URL = "/audio/Got%20It%203.m4a";
+const AUDIO_URL = "/audio/Got%20It%203.opus";
 const VOLUME_CURVE_EXPONENT = 3.32;
 
 const AudioPlayerContext = createContext(null);

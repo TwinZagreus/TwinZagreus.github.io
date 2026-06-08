@@ -16,9 +16,9 @@ import { PROJECT_COLOR_MAP } from "@/lib/theme";
 
 const CENTER_SECTION_COUNT = 3;
 const ABOUT_IMAGE_URLS = [
-  "/img/about-01.png",
-  "/img/about-02.png",
-  "/img/about-03.png",
+  "/img/about-01.webp",
+  "/img/about-02.webp",
+  "/img/about-03.webp",
 ];
 
 function HomePortraitFrame({ imageUrl, isReducedMotion }) {
