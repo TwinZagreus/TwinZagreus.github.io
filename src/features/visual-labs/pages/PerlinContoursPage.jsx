@@ -3,7 +3,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import LyricsPanel from "@/components/LyricsPanel";
 import SocialLinks from "@/components/SocialLinks";
@@ -15,11 +15,162 @@ import { getRecentWritingPosts } from "@/features/writing/postIndex";
 import { PROJECT_COLOR_MAP } from "@/lib/theme";
 
 const CENTER_SECTION_COUNT = 3;
+const CONTOUR_PERFORMANCE_STORAGE_KEY = "project-contour-performance";
+const CONTOUR_RENDER_PROFILES = Object.freeze({
+  balanced: {
+    dprCap: 1,
+  },
+  lowPower: {
+    deviceMemoryThreshold: 4,
+    dprCap: 0.82,
+  },
+  reduced: {
+    dprCap: 0.72,
+  },
+});
 const ABOUT_IMAGE_URLS = [
   "/img/about-01.webp",
   "/img/about-02.webp",
   "/img/about-03.webp",
 ];
+
+function getDevicePixelRatio() {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+
+  return window.devicePixelRatio || 1;
+}
+
+function getStoredContourFrameProfileName() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    const storedProfile = window.localStorage.getItem(
+      CONTOUR_PERFORMANCE_STORAGE_KEY,
+    );
+
+    if (storedProfile === "balanced") {
+      return "balanced";
+    }
+
+    if (
+      storedProfile === "low" ||
+      storedProfile === "low-power" ||
+      storedProfile === "lowPower"
+    ) {
+      return "lowPower";
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function isLikelyLowPowerRenderer(rendererName = "") {
+  return /intel\(r\).*(uhd|hd|iris|graphics)|intel.*(uhd|hd|iris|graphics)|microsoft basic|swiftshader|llvmpipe/i.test(
+    rendererName,
+  );
+}
+
+function getContourFrameProfile(isReducedMotion, hasLowPowerGpu = false) {
+  if (isReducedMotion) {
+    return CONTOUR_RENDER_PROFILES.reduced;
+  }
+
+  if (typeof window === "undefined") {
+    return CONTOUR_RENDER_PROFILES.balanced;
+  }
+
+  const storedProfileName = getStoredContourFrameProfileName();
+  if (storedProfileName) {
+    return CONTOUR_RENDER_PROFILES[storedProfileName];
+  }
+
+  const deviceMemory = window.navigator.deviceMemory ?? Infinity;
+  const hardwareConcurrency = window.navigator.hardwareConcurrency ?? Infinity;
+  const connection = window.navigator.connection;
+  const prefersReducedData =
+    connection?.saveData ||
+    window.matchMedia?.("(prefers-reduced-data: reduce)")?.matches;
+
+  if (
+    hasLowPowerGpu ||
+    prefersReducedData ||
+    deviceMemory <= CONTOUR_RENDER_PROFILES.lowPower.deviceMemoryThreshold ||
+    hardwareConcurrency <= 4
+  ) {
+    return CONTOUR_RENDER_PROFILES.lowPower;
+  }
+
+  return CONTOUR_RENDER_PROFILES.balanced;
+}
+
+function useContourPerformanceProfile(isReducedMotion, hasLowPowerGpu) {
+  const [profile, setProfile] = useState(() => {
+    const frameProfile = getContourFrameProfile(
+      isReducedMotion,
+      hasLowPowerGpu,
+    );
+
+    return {
+      ...frameProfile,
+      dpr: Math.min(getDevicePixelRatio(), frameProfile.dprCap),
+    };
+  });
+
+  useEffect(() => {
+    const updateProfile = () => {
+      const frameProfile = getContourFrameProfile(
+        isReducedMotion,
+        hasLowPowerGpu,
+      );
+
+      setProfile({
+        ...frameProfile,
+        dpr: Math.min(getDevicePixelRatio(), frameProfile.dprCap),
+      });
+    };
+
+    updateProfile();
+    const reducedDataQuery = window.matchMedia?.(
+      "(prefers-reduced-data: reduce)",
+    );
+    reducedDataQuery?.addEventListener?.("change", updateProfile);
+    window.addEventListener("resize", updateProfile);
+
+    return () => {
+      reducedDataQuery?.removeEventListener?.("change", updateProfile);
+      window.removeEventListener("resize", updateProfile);
+    };
+  }, [hasLowPowerGpu, isReducedMotion]);
+
+  return profile;
+}
+
+function usePageVisibility() {
+  const [isPageVisible, setIsPageVisible] = useState(() => (
+    typeof document === "undefined" || document.visibilityState !== "hidden"
+  ));
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      setIsPageVisible(document.visibilityState !== "hidden");
+    };
+
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, []);
+
+  return isPageVisible;
+}
 
 function HomePortraitFrame({ imageUrl, isReducedMotion }) {
   const { colorMap } = useProjectTheme();
@@ -262,7 +413,7 @@ const fragmentShader = `
     vec2 centered = uv - 0.5;
     centered.x *= uResolution.x / max(uResolution.y, 1.0);
 
-    float motion = mix(0.16, 1.0, uMotion);
+    float motion = uMotion;
     float sharpness = clamp(uSharpness, 0.0, 1.0);
     float smoothness = 1.0 - sharpness;
     float curvatureControl = pow(clamp(uCurvature, 0.0, 1.0), 0.62);
@@ -449,44 +600,45 @@ function ContourField({ controlsRef, isReducedMotion }) {
       return;
     }
 
+    const frameDelta = Math.min(delta, 1 / 12);
     const ease = isReducedMotion ? 0.12 : 0.065;
     pointerRef.current.lerp(pointerTargetRef.current, ease);
-    material.uniforms.uTime.value += delta;
+    material.uniforms.uTime.value += frameDelta;
     material.uniforms.uPointer.value.copy(pointerRef.current);
     material.uniforms.uMotion.value = isReducedMotion ? 0.0 : 1.0;
     material.uniforms.uSpeed.value = THREE.MathUtils.damp(
       material.uniforms.uSpeed.value,
       controlsRef.current.speed,
       8,
-      delta,
+      frameDelta,
     );
     material.uniforms.uSharpness.value = THREE.MathUtils.damp(
       material.uniforms.uSharpness.value,
       controlsRef.current.sharpness,
       10,
-      delta,
+      frameDelta,
     );
     material.uniforms.uCurvature.value = THREE.MathUtils.damp(
       material.uniforms.uCurvature.value,
       controlsRef.current.curvature,
       8,
-      delta,
+      frameDelta,
     );
     material.uniforms.uThickness.value = THREE.MathUtils.damp(
       material.uniforms.uThickness.value,
       controlsRef.current.thickness,
       9,
-      delta,
+      frameDelta,
     );
     backgroundColorTargetRef.current.set(controlsRef.current.backgroundColor);
     lineColorTargetRef.current.set(controlsRef.current.lineColor);
     material.uniforms.uBackgroundColor.value.lerp(
       backgroundColorTargetRef.current,
-      1.0 - Math.exp(-delta * 10.0),
+      1.0 - Math.exp(-frameDelta * 10.0),
     );
     material.uniforms.uLineColor.value.lerp(
       lineColorTargetRef.current,
-      1.0 - Math.exp(-delta * 10.0),
+      1.0 - Math.exp(-frameDelta * 10.0),
     );
   });
 
@@ -503,12 +655,39 @@ function ContourField({ controlsRef, isReducedMotion }) {
   );
 }
 
+function ContourGpuProfileProbe({ onLowPowerGpuDetected }) {
+  const gl = useThree((state) => state.gl);
+
+  useEffect(() => {
+    const context = gl.getContext();
+    const debugInfo = context.getExtension("WEBGL_debug_renderer_info");
+    const rendererName = debugInfo
+      ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+      : "";
+
+    if (isLikelyLowPowerRenderer(rendererName)) {
+      onLowPowerGpuDetected();
+    }
+  }, [gl, onLowPowerGpuDetected]);
+
+  return null;
+}
+
 export const ContourCanvas = memo(function ContourCanvas({
   controlsRef,
   isReducedMotion,
 }) {
   const canvasHostRef = useRef(null);
+  const [hasLowPowerGpu, setHasLowPowerGpu] = useState(false);
+  const isPageVisible = usePageVisibility();
+  const performanceProfile = useContourPerformanceProfile(
+    isReducedMotion,
+    hasLowPowerGpu,
+  );
   const [eventSource, setEventSource] = useState(null);
+  const handleLowPowerGpuDetected = useCallback(() => {
+    setHasLowPowerGpu(true);
+  }, []);
 
   useEffect(() => {
     setEventSource(canvasHostRef.current);
@@ -518,18 +697,23 @@ export const ContourCanvas = memo(function ContourCanvas({
     <div aria-hidden className="h-screen h-[100dvh]" ref={canvasHostRef}>
       {eventSource ? (
         <Canvas
-          dpr={[1, 1.6]}
+          dpr={performanceProfile.dpr}
           eventPrefix="client"
           eventSource={eventSource}
-          frameloop={isReducedMotion ? "demand" : "always"}
+          frameloop={isReducedMotion || !isPageVisible ? "demand" : "always"}
           gl={{
-            antialias: true,
             alpha: false,
-            powerPreference: "high-performance",
+            antialias: false,
+            depth: false,
+            powerPreference: "low-power",
+            stencil: false,
           }}
           orthographic
           camera={{ position: [0, 0, 1], zoom: 1 }}
         >
+          <ContourGpuProfileProbe
+            onLowPowerGpuDetected={handleLowPowerGpuDetected}
+          />
           <ContourField
             controlsRef={controlsRef}
             isReducedMotion={isReducedMotion}
