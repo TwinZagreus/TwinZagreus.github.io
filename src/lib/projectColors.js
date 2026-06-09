@@ -1,10 +1,65 @@
 
 export const BASE_COLOR_LIST = Object.freeze([
-  { index: 0, title: "T", context: "TREASURE", color: "#C8A24A" },
-  { index: 1, title: "W", context: "WISP", color: "#4F7D5A" },
-  { index: 2, title: "I", context: "INLET", color: "#4A6B8C" },
-  { index: 3, title: "N", context: "NIRVANA", color: "#F2555A" },
-  { index: 4, title: "Z", context: "ZONE", color: "#8C4A6B" },
+  {
+    index: 0,
+    title: "T",
+    context: "TREASURE",
+    color: "#C8A24A",
+    contourControls: Object.freeze({
+      speed: 1.45,
+      sharpness: 0.92,
+      curvature: 0.18,
+      thickness: 1.15,
+    }),
+  },
+  {
+    index: 1,
+    title: "W",
+    context: "WISP",
+    color: "#4F7D5A",
+    contourControls: Object.freeze({
+      speed: 0.5,
+      sharpness: 1,
+      curvature: 0.74,
+      thickness: 6,
+    }),
+  },
+  {
+    index: 2,
+    title: "I",
+    context: "INLET",
+    color: "#4A6B8C",
+    contourControls: Object.freeze({
+      speed: 1.9,
+      sharpness: 0.46,
+      curvature: 0.98,
+      thickness: 1.65,
+    }),
+  },
+  {
+    index: 3,
+    title: "N",
+    context: "NIRVANA",
+    color: "#F2555A",
+    contourControls: Object.freeze({
+      speed: 5,
+      sharpness: 0.1,
+      curvature: 0.1,
+      thickness: 0.1,
+    }),
+  },
+  {
+    index: 4,
+    title: "Z",
+    context: "ZONE",
+    color: "#8C4A6B",
+    contourControls: Object.freeze({
+      speed: 0.1,
+      sharpness: 10,
+      curvature: 0,
+      thickness: 10,
+    }),
+  },
 ]);
 
 export const MAIN_BACKGROUND_COLOR = "#F2EFE7";

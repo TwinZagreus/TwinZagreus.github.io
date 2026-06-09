@@ -21,8 +21,11 @@ function shouldShowBackdrop(pathname) {
 export default function PersistentPerlinBackdrop() {
   const pathname = usePathname();
   const isReducedMotion = useReducedMotion();
-  const { colorMap } = useProjectTheme();
-  const themedControls = useMemo(() => makeDefaultControls(colorMap), [colorMap]);
+  const { colorMap, contourControls } = useProjectTheme();
+  const themedControls = useMemo(
+    () => makeDefaultControls(colorMap, contourControls),
+    [colorMap, contourControls],
+  );
   const controlsRef = useRef(themedControls);
   const isVisible = shouldShowBackdrop(pathname);
 

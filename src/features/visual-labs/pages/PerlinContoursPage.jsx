@@ -217,14 +217,29 @@ function HomePortraitFrame({ imageUrl, isReducedMotion }) {
   );
 }
 
-export function makeDefaultControls(colorMap = PROJECT_COLOR_MAP) {
+const DEFAULT_CONTOUR_CONTROLS = Object.freeze({
+  speed: 1,
+  sharpness: 0.36,
+  curvature: 0,
+  thickness: 2,
+});
+
+export function makeDefaultControls(
+  colorMap = PROJECT_COLOR_MAP,
+  contourControls = DEFAULT_CONTOUR_CONTROLS,
+) {
+  const resolvedContourControls = {
+    ...DEFAULT_CONTOUR_CONTROLS,
+    ...(contourControls ?? {}),
+  };
+
   return {
     backgroundColor: colorMap.coral100,
     lineColor: colorMap.neutral900,
-    speed: 1,
-    sharpness: 0.36,
-    curvature: 0,
-    thickness: 2,
+    speed: resolvedContourControls.speed,
+    sharpness: resolvedContourControls.sharpness,
+    curvature: resolvedContourControls.curvature,
+    thickness: resolvedContourControls.thickness,
   };
 }
 

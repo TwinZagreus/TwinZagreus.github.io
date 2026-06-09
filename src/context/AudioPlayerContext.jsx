@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 const AUDIO_URL = "/audio/Got%20It%203.opus";
+const AUDIO_LOG_PREFIX = "[AudioPlayer]";
 const VOLUME_CURVE_EXPONENT = 3.32;
 
 const AudioPlayerContext = createContext(null);
@@ -26,6 +27,7 @@ export function AudioPlayerProvider({ children }) {
   const volumeRef = useRef(0.5);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [hasUserPaused, setHasUserPaused] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgressState] = useState(0);
@@ -170,6 +172,47 @@ export function AudioPlayerProvider({ children }) {
     setVolumeState(clamp01(nextVolume));
   }, []);
 
+  const playPlayback = useCallback(async ({ userInitiated = false } = {}) => {
+    const audio = audioRef.current;
+    if (!audio) {
+      console.info(`${AUDIO_LOG_PREFIX} play skipped: audio element is not ready`);
+      return false;
+    }
+
+    if (userInitiated) {
+      console.info(`${AUDIO_LOG_PREFIX} user initiated playback request`);
+      setHasUserPaused(false);
+    }
+
+    if (!audio.paused) {
+      console.info(`${AUDIO_LOG_PREFIX} play skipped: already playing`);
+      setIsPlaying(true);
+      return true;
+    }
+
+    try {
+      console.info(`${AUDIO_LOG_PREFIX} calling audio.play()`, {
+        muted: audio.muted,
+        readyState: audio.readyState,
+        userInitiated,
+        volume: audio.volume,
+      });
+      await audio.play();
+      console.info(`${AUDIO_LOG_PREFIX} audio.play() succeeded`);
+      setIsPlaying(true);
+      return true;
+    } catch (error) {
+      console.warn(`${AUDIO_LOG_PREFIX} audio.play() failed`, {
+        message: error?.message,
+        name: error?.name,
+        readyState: audio.readyState,
+        userInitiated,
+      });
+      setIsPlaying(false);
+      return false;
+    }
+  }, []);
+
   const togglePlayback = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio)
@@ -177,27 +220,28 @@ export function AudioPlayerProvider({ children }) {
 
     if (!audio.paused) {
       audio.pause();
+      setHasUserPaused(true);
       setIsPlaying(false);
       return;
     }
 
-    try {
-      await audio.play();
-      setIsPlaying(true);
-    } catch (error) {
+    const didPlay = await playPlayback({ userInitiated: true });
+    if (!didPlay) {
+      const error = new Error("Browser blocked audio playback");
       console.warn("[AudioPlayer] Unable to play audio", error);
-      setIsPlaying(false);
     }
-  }, []);
+  }, [playPlayback]);
 
   const value = useMemo(
     () => ({
       beginSilentSeek,
       currentTime,
       duration,
+      hasUserPaused,
       endSilentSeek,
       isLyricsOpen,
       isPlaying,
+      playPlayback,
       progress,
       seekBySeconds,
       seekToProgress,
@@ -210,9 +254,11 @@ export function AudioPlayerProvider({ children }) {
       beginSilentSeek,
       currentTime,
       duration,
+      hasUserPaused,
       endSilentSeek,
       isLyricsOpen,
       isPlaying,
+      playPlayback,
       progress,
       seekBySeconds,
       seekToProgress,

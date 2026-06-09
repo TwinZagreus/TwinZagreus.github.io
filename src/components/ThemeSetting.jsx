@@ -167,7 +167,11 @@ export default function ThemeSetting() {
 
   return (
     <>
-      <div className="fixed bottom-[50px] right-[50px] z-50 flex items-end gap-3" ref={rootRef}>
+      <div
+        className="fixed bottom-[50px] right-[50px] z-50 flex items-end gap-3"
+        data-audio-controls="true"
+        ref={rootRef}
+      >
         <div
           aria-hidden={!isOpen}
           aria-label="Theme options"
