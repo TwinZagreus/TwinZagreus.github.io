@@ -1,17 +1,14 @@
-"use client";
+﻿"use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import LyricsPanel from "@/components/LyricsPanel";
+import { HomeLeftRail, HomeRightRail } from "@/components/HomeSideRails";
 import SocialLinks from "@/components/SocialLinks";
-import TransitionLink from "@/components/TransitionLink";
-import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import WritingIndexSection from "@/features/writing/WritingIndexSection";
-import { getRecentWritingPosts } from "@/features/writing/postIndex";
 import { PROJECT_COLOR_MAP } from "@/lib/theme";
 
 const CENTER_SECTION_COUNT = 3;
@@ -241,119 +238,6 @@ export function makeDefaultControls(
     curvature: resolvedContourControls.curvature,
     thickness: resolvedContourControls.thickness,
   };
-}
-
-function formatCoordinate(value, positiveLabel, negativeLabel) {
-  if (!Number.isFinite(value)) {
-    return "";
-  }
-
-  const label = value >= 0 ? positiveLabel : negativeLabel;
-  return `${Math.abs(value).toFixed(2)}°${label}`;
-}
-
-function LiveLocationTime({ colorMap }) {
-  const [now, setNow] = useState(() => new Date());
-  const [pointerCoordinates, setPointerCoordinates] = useState({
-    latitude: 0,
-    longitude: 0,
-  });
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const updateFromPointer = (event) => {
-      const width = Math.max(window.innerWidth, 1);
-      const height = Math.max(window.innerHeight, 1);
-      const longitude = (event.clientX / width) * 360 - 180;
-      const latitude = 90 - (event.clientY / height) * 180;
-      setPointerCoordinates({ latitude, longitude });
-    };
-
-    window.addEventListener("pointermove", updateFromPointer, {
-      passive: true,
-    });
-    return () => window.removeEventListener("pointermove", updateFromPointer);
-  }, []);
-
-  const timeParts = useMemo(() => {
-    const time = new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      hour12: true,
-      minute: "2-digit",
-    }).formatToParts(now);
-
-    const hour = time.find((part) => part.type === "hour")?.value ?? "--";
-    const minute = time.find((part) => part.type === "minute")?.value ?? "--";
-    const dayPeriod =
-      time.find((part) => part.type === "dayPeriod")?.value ?? "";
-    const date = new Intl.DateTimeFormat("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }).format(now);
-
-    return { date, dayPeriod, hour, minute };
-  }, [now]);
-
-  return (
-    <div className="space-y-12">
-      <div className="text-3xl leading-none" style={{ color: colorMap.coral }}>
-        +
-      </div>
-      <section>
-        <div
-          className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]"
-          style={{
-            borderColor: alpha(colorMap.coral, 0.5),
-            color: colorMap.coral,
-          }}
-        >
-          Coordinates / 坐标
-        </div>
-        <p
-          className="mt-5 text-sm font-bold tracking-[0.06em]"
-          style={{ color: colorMap.ink800 }}
-        >
-          Pointer on flat earth
-        </p>
-        <p
-          className="mt-2 text-sm tracking-[0.08em]"
-          style={{ color: colorMap.ink600 }}
-        >
-          {formatCoordinate(pointerCoordinates.latitude, "N", "S")},{" "}
-          {formatCoordinate(pointerCoordinates.longitude, "E", "W")}
-        </p>
-      </section>
-      <section>
-        <div
-          className="inline-block border-b pb-2 text-xs uppercase tracking-[0.28em]"
-          style={{
-            borderColor: alpha(colorMap.coral, 0.5),
-            color: colorMap.coral,
-          }}
-        >
-          Time / 时间
-        </div>
-        <p
-          className="mt-5 text-3xl leading-none"
-          style={{ color: colorMap.ink800 }}
-        >
-          {timeParts.hour}:{timeParts.minute}{" "}
-          <span className="text-sm">{timeParts.dayPeriod}</span>
-        </p>
-        <p
-          className="mt-3 text-sm tracking-[0.08em]"
-          style={{ color: colorMap.ink600 }}
-        >
-          {timeParts.date}
-        </p>
-      </section>
-    </div>
-  );
 }
 
 const vertexShader = `
@@ -741,16 +625,8 @@ export const ContourCanvas = memo(function ContourCanvas({
 
 export default function PerlinContoursPage() {
   const isReducedMotion = useReducedMotion();
-  const {
-    currentTime,
-    duration,
-    isLyricsOpen,
-    progress,
-    seekToProgress,
-  } = useAudioPlayer();
   const { colorMap } = useProjectTheme();
   const centerScrollRef = useRef(null);
-  const recentPosts = useMemo(() => getRecentWritingPosts(4), []);
   const age = useMemo(() => new Date().getFullYear() - 1998, []);
   const [activeCenterSection, setActiveCenterSection] = useState(0);
   const [activeAboutImage, setActiveAboutImage] = useState(0);
@@ -883,27 +759,7 @@ export default function PerlinContoursPage() {
             <div />
           </header>
 
-          <aside className="hidden min-h-0 flex-col justify-between pb-7 pt-20 lg:flex">
-            <LiveLocationTime colorMap={colorMap} />
-            <div>
-              <div
-                className="mb-5 font-serif text-2xl italic"
-                style={{ color: alpha(colorMap.coral, 0.45) }}
-              >
-                TwinZ
-              </div>
-              <div
-                className="h-px w-44"
-                style={{ backgroundColor: alpha(colorMap.coral, 0.4) }}
-              />
-              <p
-                className="mt-5 max-w-56 text-sm uppercase leading-relaxed tracking-[0.18em]"
-                style={{ color: colorMap.ink700 }}
-              >
-                Designing with intention. Building with curiosity.
-              </p>
-            </div>
-          </aside>
+          <HomeLeftRail />
 
           <div
             className="perlin-center-scroll min-h-0 overflow-y-auto overscroll-contain snap-y snap-mandatory max-lg:row-start-2"
@@ -931,7 +787,7 @@ export default function PerlinContoursPage() {
                     className="text-[clamp(1.15rem,min(2.2vw,4.2vh),2.6rem)] tracking-[0.22em]"
                     style={{ color: colorMap.coral }}
                   >
-                    记录灵感，探索表达的边界。
+                    璁板綍鐏垫劅锛屾帰绱㈣〃杈剧殑杈圭晫銆?
                   </div>
                   <div className="flex items-center justify-center gap-4">
                     <span
@@ -979,10 +835,10 @@ export default function PerlinContoursPage() {
                   }}
                 >
                   {[
-                    ["田 / Tian", "姓 / Surname"],
-                    ["543150640@qq.com", "邮箱 / Email"],
-                    ["15886371859", "电话 / Phone"],
-                    [`${age}`, "年龄 / Age"],
+                    ["鐢?/ Tian", "濮?/ Surname"],
+                    ["543150640@qq.com", "閭 / Email"],
+                    ["15886371859", "鐢佃瘽 / Phone"],
+                    [`${age}`, "骞撮緞 / Age"],
                   ].map(([value, label], index) => (
                     <div
                       className={index ? "border-l" : ""}
@@ -1025,7 +881,7 @@ export default function PerlinContoursPage() {
                 }}
                 type="button"
               >
-                ←
+                鈫?
               </button>
 
               <div
@@ -1073,81 +929,13 @@ export default function PerlinContoursPage() {
                 }}
                 type="button"
               >
-                →
+                鈫?
               </button>
               </div>
             </section>
           </div>
 
-          <aside className="hidden min-h-0 flex-col justify-center lg:flex">
-            <div
-              className="self-end text-3xl leading-none"
-              style={{ color: colorMap.coral }}
-            >
-              +
-            </div>
-            <section
-              className="mt-28 border-l pl-8"
-              style={{ borderColor: alpha(colorMap.coral, 0.42) }}
-            >
-              <AnimatePresence initial={false} mode="wait">
-                {isLyricsOpen ? (
-                  <LyricsPanel
-                    currentTime={currentTime}
-                    duration={duration}
-                    key="lyrics"
-                    onSeekToProgress={seekToProgress}
-                    progress={progress}
-                  />
-                ) : (
-              <motion.div
-                animate={isReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-                className="mt-8 space-y-5"
-                exit={isReducedMotion ? { opacity: 0 } : { opacity: 0, y: 18 }}
-                initial={isReducedMotion ? false : { opacity: 0, y: 22 }}
-                key="articles"
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {recentPosts.map((post) => (
-                  <TransitionLink
-                    className="block border-b pb-5 transition hover:translate-x-1"
-                    href={`/writing/${post.slug}`}
-                    key={post.slug}
-                    label="Opening field note"
-                    style={{
-                      borderColor: alpha(colorMap.coral, 0.22),
-                      color: colorMap.ink800,
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span
-                        className="mt-1 grid h-4 w-4 place-items-center rounded-full border text-[9px]"
-                        style={{
-                          borderColor: colorMap.coral,
-                          color: colorMap.coral,
-                        }}
-                      >
-                        •
-                      </span>
-                      <div>
-                        <h2 className="text-sm font-bold uppercase leading-snug tracking-[0.16em]">
-                          {post.title}
-                        </h2>
-                        <p
-                          className="mt-3 text-xs tracking-[0.16em]"
-                          style={{ color: colorMap.ink600 }}
-                        >
-                          {post.date} / 6 min read
-                        </p>
-                      </div>
-                    </div>
-                  </TransitionLink>
-                ))}
-              </motion.div>
-                )}
-              </AnimatePresence>
-            </section>
-          </aside>
+          <HomeRightRail />
         </div>
       </section>
     </main>

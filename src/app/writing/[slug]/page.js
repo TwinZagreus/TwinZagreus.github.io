@@ -22,7 +22,8 @@ export function generateMetadata({ params }) {
 }
 
 export default function Page({ params }) {
-  const post = getPostBySlug(params.slug);
+  const allPosts = getAllPosts();
+  const post = allPosts.find((item) => item.slug === params.slug) ?? null;
 
   if (!post) {
     notFound();
