@@ -25,11 +25,7 @@ const CONTOUR_RENDER_PROFILES = Object.freeze({
     dprCap: 0.72,
   },
 });
-const ABOUT_IMAGE_URLS = [
-  "/img/about-01.webp",
-  "/img/about-02.webp",
-  "/img/about-03.webp",
-];
+const ABOUT_IMAGE = "/img/about-01.webp";
 
 function getDevicePixelRatio() {
   if (typeof window === "undefined") {
@@ -646,7 +642,6 @@ export default function PerlinContoursPage() {
   const centerScrollRef = useRef(null);
   const age = useMemo(() => new Date().getFullYear() - 1998, []);
   const [activeCenterSection, setActiveCenterSection] = useState(0);
-  const [activeAboutImage, setActiveAboutImage] = useState(0);
 
   useEffect(() => {
     const element = centerScrollRef.current;
@@ -702,13 +697,7 @@ export default function PerlinContoursPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveAboutImage((current) => (current + 1) % ABOUT_IMAGE_URLS.length);
-    }, 4000);
 
-    return () => window.clearInterval(timer);
-  }, []);
 
   return (
     <main
@@ -882,27 +871,8 @@ export default function PerlinContoursPage() {
             </section>
 
             <section className="perlin-center-panel flex h-full min-h-0 snap-start items-center justify-center py-16">
-              <div className="grid h-[min(88vh,900px)] w-full max-w-[min(94vw,1440px)] grid-cols-[clamp(3.25rem,5vw,4.75rem)_minmax(0,1fr)_clamp(3.25rem,5vw,4.75rem)] items-center gap-[clamp(0.5rem,1vw,1rem)]">
-              <button
-                aria-label="Previous about image"
-                className="z-10 mx-auto grid h-14 w-14 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:-translate-x-1"
-                onClick={() => {
-                  setActiveAboutImage((current) =>
-                    current === 0 ? ABOUT_IMAGE_URLS.length - 1 : current - 1,
-                  );
-                }}
-                style={{
-                  backgroundColor: alpha(colorMap.coral100, 0.72),
-                  borderColor: alpha(colorMap.coral, 0.32),
-                  color: colorMap.coral,
-                }}
-                type="button"
-              >
-                ←
-              </button>
-
               <div
-                className="relative grid h-full min-w-0 place-items-center border p-3 shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px]"
+                className="relative grid h-[min(88vh,900px)] w-full max-w-[min(94vw,1440px)] place-items-center border p-3 shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px]"
                 style={{
                   backgroundColor: alpha(colorMap.coral100, 0.3),
                   borderColor: alpha(colorMap.coral, 0.28),
@@ -923,31 +893,12 @@ export default function PerlinContoursPage() {
                   }}
                 >
                   <img
-                    alt={`About visual ${activeAboutImage + 1}`}
+                    alt="About visual"
                     className="h-full w-full object-cover"
                     draggable="false"
-                    src={ABOUT_IMAGE_URLS[activeAboutImage]}
+                    src={ABOUT_IMAGE}
                   />
                 </div>
-              </div>
-
-              <button
-                aria-label="Next about image"
-                className="z-10 mx-auto grid h-14 w-14 place-items-center rounded-full border text-2xl shadow-[0_18px_36px_rgba(104,75,24,0.12)] transition hover:translate-x-1"
-                onClick={() => {
-                  setActiveAboutImage(
-                    (current) => (current + 1) % ABOUT_IMAGE_URLS.length,
-                  );
-                }}
-                style={{
-                  backgroundColor: alpha(colorMap.coral100, 0.72),
-                  borderColor: alpha(colorMap.coral, 0.32),
-                  color: colorMap.coral,
-                }}
-                type="button"
-              >
-                →
-              </button>
               </div>
             </section>
           </div>
