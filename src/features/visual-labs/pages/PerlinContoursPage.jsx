@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { HomeLeftRail, HomeRightRail } from "@/components/HomeSideRails";
 import SocialLinks from "@/components/SocialLinks";
@@ -26,6 +26,9 @@ const CONTOUR_RENDER_PROFILES = Object.freeze({
   },
 });
 const ABOUT_IMAGE = "/img/about-01.webp";
+const ABOUT_DEPTH_IMAGE = "/img/about-01-depth.webp";
+const ABOUT_IMAGE_WIDTH = 2160;
+const ABOUT_IMAGE_HEIGHT = 1212;
 
 function getDevicePixelRatio() {
   if (typeof window === "undefined") {
@@ -214,8 +217,205 @@ function HomePortraitFrame({ imageUrl, isReducedMotion }) {
   );
 }
 
+const aboutScanVertexShader = `
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const aboutScanFragmentShader = `
+  precision highp float;
+
+  uniform sampler2D uTexture;
+  uniform sampler2D uDepth;
+  uniform vec2 uPointer;
+  uniform float uProgress;
+  uniform float uAspect;
+  uniform vec3 uScanColor;
+
+  varying vec2 vUv;
+
+  float hash(vec2 p) {
+    p = fract(p * vec2(234.34, 546.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+
+  float cellNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    float res = 1.0;
+
+    for (int y = -1; y <= 1; y++) {
+      for (int x = -1; x <= 1; x++) {
+        vec2 neighbor = vec2(float(x), float(y));
+        vec2 point = vec2(hash(i + neighbor), hash(i + neighbor + 19.13));
+        vec2 diff = neighbor + point - f;
+        res = min(res, length(diff));
+      }
+    }
+
+    return res;
+  }
+
+  vec3 blendScreen(vec3 base, vec3 blend) {
+    return 1.0 - (1.0 - base) * (1.0 - blend);
+  }
+
+  void main() {
+    float depth = texture2D(uDepth, vUv).r;
+    vec2 pointer = uPointer * 0.018;
+    vec2 displacedUv = clamp(vUv + (depth - 0.36) * pointer, vec2(0.0), vec2(1.0));
+    vec3 baseColor = texture2D(uTexture, displacedUv).rgb;
+    baseColor = pow(baseColor, vec3(0.72)) * 1.32 + vec3(0.055);
+    baseColor = clamp(baseColor, 0.0, 1.0);
+
+    vec2 scanUv = vec2(vUv.x * uAspect, vUv.y);
+    vec2 tiledUv = mod(scanUv * 118.0, 2.0) - 1.0;
+    float brightness = 1.0 - smoothstep(0.0, 1.0, cellNoise((scanUv * 118.0) / 2.0));
+    float dotMask = smoothstep(0.5, 0.49, length(tiledUv)) * brightness;
+
+    float scanLine = 1.0 - smoothstep(0.0, 0.028, abs(depth - uProgress));
+    float depthGlow = smoothstep(0.46, 1.0, depth);
+    vec3 scanMask = dotMask * scanLine * mix(3.2, 5.4, depthGlow) * uScanColor;
+
+    vec3 finalColor = blendScreen(baseColor, scanMask);
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+function useCoverPlaneScale(width, height) {
+  const { viewport } = useThree();
+  const aspect = width / height;
+
+  return useMemo(() => {
+    let w = viewport.width;
+    let h = w / aspect;
+
+    if (h < viewport.height) {
+      h = viewport.height;
+      w = h * aspect;
+    }
+
+    return [w, h, 1];
+  }, [aspect, viewport.height, viewport.width]);
+}
+
+function AboutDepthScanScene({ scanColor, setLoaded }) {
+  const [rawMap, depthMap] = useLoader(THREE.TextureLoader, [
+    ABOUT_IMAGE,
+    ABOUT_DEPTH_IMAGE,
+  ]);
+  const scale = useCoverPlaneScale(ABOUT_IMAGE_WIDTH, ABOUT_IMAGE_HEIGHT);
+  const materialRef = useRef(null);
+  const pointerRef = useRef(new THREE.Vector2(0, 0));
+  const progressRef = useRef(0);
+
+  useEffect(() => {
+    rawMap.colorSpace = THREE.SRGBColorSpace;
+    depthMap.colorSpace = THREE.NoColorSpace;
+    rawMap.minFilter = THREE.LinearFilter;
+    depthMap.minFilter = THREE.LinearFilter;
+    rawMap.magFilter = THREE.LinearFilter;
+    depthMap.magFilter = THREE.LinearFilter;
+    setLoaded(true);
+  }, [depthMap, rawMap, setLoaded]);
+
+  const uniforms = useMemo(
+    () => ({
+      uTexture: { value: rawMap },
+      uDepth: { value: depthMap },
+      uPointer: { value: new THREE.Vector2(0, 0) },
+      uProgress: { value: 0 },
+      uAspect: { value: ABOUT_IMAGE_WIDTH / ABOUT_IMAGE_HEIGHT },
+      uScanColor: { value: new THREE.Color("#ffffff") },
+    }),
+    [depthMap, rawMap],
+  );
+
+  useEffect(() => {
+    uniforms.uScanColor.value.set(scanColor);
+  }, [scanColor, uniforms]);
+
+  useFrame(({ pointer }, delta) => {
+    if (!materialRef.current) {
+      return;
+    }
+
+    pointerRef.current.lerp(pointer, 0.08);
+    progressRef.current = (progressRef.current + delta / 3.2) % 1;
+    uniforms.uPointer.value.copy(pointerRef.current);
+    uniforms.uProgress.value = progressRef.current;
+    uniforms.uScanColor.value.set(scanColor);
+  });
+
+  return (
+    <mesh scale={scale}>
+      <planeGeometry args={[1, 1]} />
+      <shaderMaterial
+        ref={materialRef}
+        fragmentShader={aboutScanFragmentShader}
+        uniforms={uniforms}
+        vertexShader={aboutScanVertexShader}
+      />
+    </mesh>
+  );
+}
+
+function AboutDepthScanFrame({ isReducedMotion }) {
+  const { colorMap } = useProjectTheme();
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  if (isReducedMotion) {
+    return (
+      <img
+        alt="About visual"
+        className="h-full w-full object-cover"
+        draggable="false"
+        src={ABOUT_IMAGE}
+      />
+    );
+  }
+
+  return (
+    <div className="relative h-full w-full">
+      <img
+        alt="About visual"
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+          isLoaded ? "opacity-0" : "opacity-100"
+        }`}
+        draggable="false"
+        src={ABOUT_IMAGE}
+      />
+      <Canvas
+        className={`absolute inset-0 transition-opacity duration-500 ${
+          isLoaded ? "opacity-100" : "opacity-0"
+        }`}
+        dpr={[1, 1.5]}
+        frameloop="always"
+        gl={{
+          alpha: false,
+          antialias: true,
+          powerPreference: "high-performance",
+        }}
+      >
+        <Suspense fallback={null}>
+          <AboutDepthScanScene
+            scanColor={colorMap.coral}
+            setLoaded={setIsLoaded}
+          />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}
+
 const DEFAULT_CONTOUR_CONTROLS = Object.freeze({
   speed: 1,
+  curvatureOverride: null,
   sharpness: 0.36,
   curvature: 0,
   thickness: 2,
@@ -234,6 +434,7 @@ export function makeDefaultControls(
     backgroundColor: colorMap.coral100,
     lineColor: colorMap.neutral900,
     speed: resolvedContourControls.speed,
+    curvatureOverride: resolvedContourControls.curvatureOverride,
     sharpness: resolvedContourControls.sharpness,
     curvature: resolvedContourControls.curvature,
     thickness: resolvedContourControls.thickness,
@@ -519,8 +720,8 @@ function ContourField({ controlsRef, isReducedMotion }) {
     );
     material.uniforms.uCurvature.value = THREE.MathUtils.damp(
       material.uniforms.uCurvature.value,
-      controlsRef.current.curvature,
-      8,
+      controlsRef.current.curvatureOverride ?? controlsRef.current.curvature,
+      controlsRef.current.curvatureOverride === 0 ? 24 : 12,
       frameDelta,
     );
     material.uniforms.uThickness.value = THREE.MathUtils.damp(
@@ -892,12 +1093,7 @@ export default function PerlinContoursPage() {
                     borderColor: alpha(colorMap.coral, 0.16),
                   }}
                 >
-                  <img
-                    alt="About visual"
-                    className="h-full w-full object-cover"
-                    draggable="false"
-                    src={ABOUT_IMAGE}
-                  />
+                  <AboutDepthScanFrame isReducedMotion={Boolean(isReducedMotion)} />
                 </div>
               </div>
             </section>

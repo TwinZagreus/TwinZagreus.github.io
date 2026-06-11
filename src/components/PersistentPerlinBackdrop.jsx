@@ -11,11 +11,27 @@ import {
 } from "@/features/visual-labs/pages/PerlinContoursPage";
 
 const BACKDROP_ROUTES = ["/", "/home", "/perlin-contours", "/writing"];
+const WHEEL_CURVATURE_TARGET = 0;
+const WHEEL_CURVATURE_RESET_MS = 140;
+const WHEEL_CURVATURE_IGNORE_SELECTOR = [
+  "input",
+  "textarea",
+  "select",
+  "button",
+  "[contenteditable='true']",
+  "[data-audio-controls='true']",
+  "[role='dialog']",
+  "[aria-modal='true']",
+].join(",");
 
 function shouldShowBackdrop(pathname) {
   return BACKDROP_ROUTES.some((route) => (
     route === "/" ? pathname === "/" : pathname === route || pathname.startsWith(`${route}/`)
   ));
+}
+
+function shouldIgnoreWheelCurvature(target) {
+  return target instanceof Element && Boolean(target.closest(WHEEL_CURVATURE_IGNORE_SELECTOR));
 }
 
 export default function PersistentPerlinBackdrop() {
@@ -27,6 +43,7 @@ export default function PersistentPerlinBackdrop() {
     [colorMap, contourControls],
   );
   const controlsRef = useRef(themedControls);
+  const curvatureResetTimerRef = useRef(0);
   const isVisible = shouldShowBackdrop(pathname);
 
   useEffect(() => {
@@ -35,11 +52,46 @@ export default function PersistentPerlinBackdrop() {
       backgroundColor: themedControls.backgroundColor,
       lineColor: themedControls.lineColor,
       speed: themedControls.speed,
+      curvatureOverride:
+        controlsRef.current.curvatureOverride ?? themedControls.curvatureOverride,
       sharpness: themedControls.sharpness,
       curvature: themedControls.curvature,
       thickness: themedControls.thickness,
     };
   }, [themedControls]);
+
+  useEffect(() => {
+    if (!isVisible || isReducedMotion) {
+      controlsRef.current.curvatureOverride = null;
+      window.clearTimeout(curvatureResetTimerRef.current);
+      return undefined;
+    }
+
+    const resetCurvature = () => {
+      controlsRef.current.curvatureOverride = null;
+    };
+
+    const handleWheel = (event) => {
+      if (shouldIgnoreWheelCurvature(event.target)) {
+        return;
+      }
+
+      controlsRef.current.curvatureOverride = WHEEL_CURVATURE_TARGET;
+      window.clearTimeout(curvatureResetTimerRef.current);
+      curvatureResetTimerRef.current = window.setTimeout(
+        resetCurvature,
+        WHEEL_CURVATURE_RESET_MS,
+      );
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.clearTimeout(curvatureResetTimerRef.current);
+      controlsRef.current.curvatureOverride = null;
+    };
+  }, [isReducedMotion, isVisible]);
 
   if (!isVisible) {
     return null;

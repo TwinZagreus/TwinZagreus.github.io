@@ -56,7 +56,7 @@ export const BASE_COLOR_LIST = Object.freeze([
     contourControls: Object.freeze({
       speed: 0.1,
       sharpness: 10,
-      curvature: 0,
+      curvature: 0.1,
       thickness: 10,
     }),
   },

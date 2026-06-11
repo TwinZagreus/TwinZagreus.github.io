@@ -2,7 +2,7 @@
 
 import { alpha } from "@mui/material/styles";
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { HomeLeftRail, HomeRightRail } from "@/components/HomeSideRails";
 import TransitionLink from "@/components/TransitionLink";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
@@ -309,7 +309,7 @@ function MarkdownBody({ content }) {
                   color: colorMap.coral,
                 }}
               >
-                “
+                &ldquo;
               </span>
               {section.text}
             </blockquote>
@@ -335,24 +335,69 @@ export default function WritingArticlePage({ post }) {
   const { colorMap } = useProjectTheme();
   const headings = getHeadings(post.content);
   const readMinutes = getReadMinutes(post);
+  const articleScrollRef = useRef(null);
   const [mapVariant, setMapVariant] = useState(0);
+  const [scrollState, setScrollState] = useState({
+    canScroll: false,
+    progress: 0,
+  });
 
   useEffect(() => {
     setMapVariant(Math.floor(Math.random() * MAP_HERO_VARIANT_COUNT));
   }, [post.slug]);
 
+  useEffect(() => {
+    const scrollNode = articleScrollRef.current;
+    if (!scrollNode) {
+      return undefined;
+    }
+
+    const updateScrollState = () => {
+      const maxScroll = scrollNode.scrollHeight - scrollNode.clientHeight;
+      const canScroll = maxScroll > 1;
+      const progress = canScroll ? scrollNode.scrollTop / maxScroll : 0;
+
+      setScrollState({
+        canScroll,
+        progress: Math.min(Math.max(progress, 0), 1),
+      });
+    };
+
+    updateScrollState();
+    scrollNode.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+
+    return () => {
+      scrollNode.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [post.slug]);
+
   return (
-    <main className="relative z-10 min-h-screen overflow-hidden px-4 py-8 sm:px-7 lg:px-9">
+    <main className="relative z-10 h-screen h-[100dvh] overflow-hidden px-4 py-8 sm:px-7 lg:px-9">
+      <style>
+        {`
+          .writing-article-scroll {
+            scrollbar-width: none;
+          }
+
+          .writing-article-scroll::-webkit-scrollbar {
+            display: none;
+            height: 0;
+            width: 0;
+          }
+        `}
+      </style>
       <motion.div
-        className="relative mx-auto grid w-full max-w-[1840px] gap-8 xl:grid-cols-[260px_minmax(0,1fr)_360px]"
+        className="relative mx-auto grid h-full min-h-0 w-full max-w-[1840px] gap-8 xl:grid-cols-[260px_minmax(0,1fr)_360px]"
         initial={isReducedMotion ? false : { opacity: 0, y: 28 }}
         animate={isReducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
       >
-        <HomeLeftRail className="max-xl:hidden" />
+        <HomeLeftRail className="h-full overflow-hidden max-xl:hidden" />
 
-        <article
-          className="relative min-h-[calc(100vh-4rem)] overflow-hidden border px-5 py-9 shadow-xl backdrop-blur-[2px] sm:px-10 lg:px-12 xl:px-14"
+        <section
+          className="relative flex h-full min-h-0 flex-col overflow-hidden border shadow-xl backdrop-blur-[2px]"
           style={{
             backgroundColor: alpha(colorMap.coral100, 0.62),
             borderColor: alpha(colorMap.coral, 0.22),
@@ -360,24 +405,51 @@ export default function WritingArticlePage({ post }) {
             color: colorMap.ink950,
           }}
         >
-          <span
+          <div
             aria-hidden="true"
-            className="absolute right-0 top-0 h-72 w-1"
-            style={{ backgroundColor: colorMap.coral }}
-          />
+            className="pointer-events-none absolute bottom-8 right-0 top-[4.75rem] z-20 w-5"
+          >
+            <span
+              className="absolute bottom-0 right-[9px] top-0 w-px"
+              style={{ backgroundColor: alpha(colorMap.coral, 0.22) }}
+            />
+            <span
+              className="absolute right-[7px] h-[clamp(76px,16vh,150px)] w-1"
+              style={{
+                backgroundColor: colorMap.coral,
+                boxShadow: `0 0 18px ${alpha(colorMap.coral, 0.18)}`,
+                opacity: scrollState.canScroll ? 1 : 0.46,
+                top: `${scrollState.progress * 100}%`,
+                transform: `translateY(-${scrollState.progress * 100}%)`,
+              }}
+            />
+          </div>
 
-          <div className="relative">
+          <div
+            className="relative z-10 shrink-0 border-b px-5 pb-4 pt-9 sm:px-10 lg:px-12 xl:px-14"
+            style={{ borderColor: alpha(colorMap.ink950, 0.08) }}
+          >
             <TransitionLink
-              className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] transition duration-200 ease-out hover:-translate-x-1"
+              className="inline-flex items-center gap-3 border px-3 py-2 text-[13px] font-bold uppercase tracking-[0.2em] transition duration-200 ease-out hover:-translate-x-1"
               href="/#writing"
               label="Back to notes"
-              style={{ color: colorMap.coral }}
+              style={{
+                backgroundColor: alpha(colorMap.coral100, 0.54),
+                borderColor: alpha(colorMap.coral, 0.34),
+                color: colorMap.coral,
+              }}
             >
-              <span aria-hidden="true">←</span>
+              <span aria-hidden="true" className="text-[16px] leading-none">&larr;</span>
               Back to notes
             </TransitionLink>
+          </div>
 
-            <header className="mt-8">
+          <article
+            className="writing-article-scroll relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-9 pt-4 sm:px-10 lg:px-12 xl:px-14"
+            ref={articleScrollRef}
+          >
+            <div className="relative">
+              <header>
               <h1
                 className="max-w-[980px] text-[clamp(2.25rem,4.3vw,4.5rem)] font-semibold leading-[1.05] tracking-[0.02em]"
                 style={{
@@ -414,7 +486,7 @@ export default function WritingArticlePage({ post }) {
                   {post.tags?.[0] ?? "Lifestyle"} / 写作
                 </span>
               </div>
-            </header>
+              </header>
 
             <ArticleMapHero colorMap={colorMap} variant={mapVariant} />
 
@@ -449,10 +521,11 @@ export default function WritingArticlePage({ post }) {
                 ))}
               </div>
             ) : null}
-          </div>
-        </article>
+            </div>
+          </article>
+        </section>
 
-        <HomeRightRail className="max-xl:hidden" />
+        <HomeRightRail className="h-full overflow-hidden max-xl:hidden" />
       </motion.div>
     </main>
   );
