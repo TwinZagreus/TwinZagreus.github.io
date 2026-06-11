@@ -4,114 +4,30 @@ import { PROJECT_COLOR_MAP, PROJECT_COLORS, PROJECT_COLOR_SEQUENCE } from "../li
 import * as THREE from "three";
 
 
-const AREA_FONT_FAMILY = '"AreaKilometer50", "Segoe UI", sans-serif';
-const AREA_FONT_URL = "/font/AreaKilometer50-gxmEq.otf";
-let areaFontPromise = null;
 const tintedSvgCache = new Map();
 const DEBUG_LOGO_LAYOUT = false;
 
 export const LOADING_OVERLAY_CONFIG = Object.freeze({
-  backgroundColor: PROJECT_COLOR_MAP.coral100, // Loading 全屏背景色
-  logoText: "TwinZ", // Logo 文案
-  logoColor: PROJECT_COLOR_MAP.ink950, // Twin 文字颜色
-  animatedLetterColor: PROJECT_COLOR_MAP.coral, // Z 红框颜色
-  zAssetUrl: "/img/final-single.svg", // Z 使用的 SVG 动效资源
-  zAssetHeightScale: 1.12, // SVG Z 相对 zLogoSize 的高度比例
-  logoSize: 104, // 通用字号兜底值
-  twinLogoSize: 104, // Twin 的字号
-  zLogoSize: 90, // Z 的字号
-  logoGap: -12, // Twin 和 Z 之间的水平间距
-  twinPaddingXScale: 0.22, // Twin 贴图左右留白比例
-  twinPaddingYScale: 0.1, // Twin 贴图上下留白比例
-  zPaddingXScale: 0.34, // Z 红框左右留白比例
-  zPaddingTopScale: 0.1, // Z 红框上边距比例
-  zPaddingBottomScale: 0.01, // Z 红框下边距比例
-  zCornerRadiusScale: 0.22, // Z 红框圆角比例
-  zOffsetY: 10, // Z 整体上下偏移，正数向上
-  zColorLoopDuration: 1.4, // 保留字段，当前未参与动画
-  sliceCount: 10, // 背景切片数量
-  sliceSkewAngle: 10, // 每个切片的斜切角度
-  transitionDuration: 0.5, // 单轮切片下落的总时长基准
-  sliceStagger: 0.035, // 切片从左到右的错峰延迟
-  sliceFallDistance: 1200, // 切片下落距离
-  logoDisappearDuration: 0.2, // 切片结束后 Twin 收拢消失时长
-  zFadeDuration: 0.8, // 最后 Z 单独渐隐时长
-  easing: "power3.in", // 切片下落缓动
+  backgroundColor: PROJECT_COLOR_MAP.coral100,
+  logoText: "TwinZ",
+  animatedLetterColor: PROJECT_COLOR_MAP.coral,
+  zAssetUrl: "/img/final-single.svg",
+  zAssetHeightScale: 1.12,
+  logoSize: 104,
+  zLogoSize: 90,
+  zPaddingXScale: 0.34,
+  zPaddingTopScale: 0.1,
+  zPaddingBottomScale: 0.01,
+  zCornerRadiusScale: 0.22,
+  zOffsetY: 10,
+  sliceCount: 10,
+  sliceSkewAngle: 10,
+  transitionDuration: 0.5,
+  sliceStagger: 0.035,
+  sliceFallDistance: 1200,
+  zFadeDuration: 0.8,
+  easing: "power3.in",
 });
-
-function LoadingPeripheralDetails({ color, isExiting }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 h-full w-full opacity-100 transition-opacity duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:duration-[120ms]"
-      data-exiting={isExiting ? "true" : "false"}
-      focusable="false"
-      preserveAspectRatio="xMidYMid slice"
-      style={{
-        opacity: isExiting ? 0 : 1,
-        pointerEvents: "none",
-        zIndex: 2,
-      }}
-      viewBox="0 0 1600 900"
-    >
-      <defs>
-        <filter id="loading-detail-soften">
-          <feGaussianBlur stdDeviation="0.18" />
-        </filter>
-      </defs>
-      <g
-        fill="none"
-        filter="url(#loading-detail-soften)"
-        stroke={color}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <g opacity="0.26" strokeWidth="1.05">
-          <path d="M-70 28 C18 78 100 18 158 50 C224 86 254 20 326 10 C392 2 430 42 496 12" />
-          <path d="M-78 70 C12 130 92 72 168 90 C238 108 270 55 348 48 C404 43 452 76 520 42" />
-          <path d="M-82 112 C4 166 82 124 160 138 C236 152 280 104 352 96 C420 88 458 116 542 84" />
-          <path d="M-90 158 C-6 208 78 174 150 184 C226 194 278 156 352 144 C426 132 488 160 560 126" />
-          <path d="M-76 208 C-8 250 78 222 142 230 C228 240 282 206 350 190 C430 170 506 204 586 166" />
-        </g>
-
-        <g opacity="0.24" strokeWidth="1.05">
-          <path d="M1130 910 C1178 806 1238 808 1280 740 C1320 674 1398 696 1438 620 C1478 544 1538 508 1642 526" />
-          <path d="M1180 914 C1228 832 1270 820 1310 762 C1352 700 1410 726 1450 656 C1492 584 1540 554 1648 566" />
-          <path d="M1228 918 C1262 852 1310 850 1350 794 C1390 738 1434 764 1476 700 C1522 632 1564 604 1656 620" />
-          <path d="M1278 922 C1304 872 1344 872 1386 824 C1428 776 1472 794 1512 740 C1558 678 1598 660 1664 680" />
-          <path d="M1326 926 C1350 890 1384 898 1424 856 C1468 810 1510 832 1550 790 C1600 738 1628 734 1670 752" />
-        </g>
-
-        <path
-          d="M54 854 C186 834 176 754 300 720 C368 702 388 676 416 628"
-          opacity="0.42"
-          strokeDasharray="8 14"
-          strokeWidth="1.35"
-        />
-        <path
-          d="M1298 180 C1366 116 1434 108 1496 142 C1544 168 1562 110 1606 106"
-          opacity="0.42"
-          strokeDasharray="8 14"
-          strokeWidth="1.35"
-        />
-
-        <g opacity="0.62" strokeWidth="1.2">
-          <path d="M274 182 L274 214" />
-          <path d="M258 198 L290 198" />
-          <path d="M1432 560 L1432 592" />
-          <path d="M1416 576 L1448 576" />
-        </g>
-
-        <g opacity="0.5">
-          <circle cx="410" cy="636" r="22" strokeWidth="1" />
-          <circle cx="410" cy="636" fill={color} r="5" stroke="none" />
-          <circle cx="1434" cy="154" r="22" strokeWidth="1" />
-          <circle cx="1434" cy="154" fill={color} r="5" stroke="none" />
-        </g>
-      </g>
-    </svg>
-  );
-}
 
 function makeSvgDataUrl(svgText) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
@@ -137,20 +53,16 @@ async function getTintedSvgDataUrl(url, color) {
   return dataUrl;
 }
 
-function ensureAreaKilometerFont() {
-  if (typeof window === "undefined" || typeof FontFace === "undefined") {
-    return Promise.resolve();
-  }
+function makeLayoutBoundsCanvas(width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width));
+  canvas.height = Math.max(1, Math.round(height));
 
-  if (!areaFontPromise) {
-    const font = new FontFace("AreaKilometer50", `url("${AREA_FONT_URL}") format("opentype")`);
-    areaFontPromise = font.load().then((loadedFace) => {
-      document.fonts.add(loadedFace);
-      return document.fonts.load(`400 120px ${AREA_FONT_FAMILY}`);
-    });
-  }
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#000000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
 
-  return areaFontPromise;
+  return canvas;
 }
 
 function getViewportFromContainer(container) {
@@ -191,247 +103,6 @@ function getViewportFromContainer(container) {
   };
 }
 
-function worldToScreenPoint(viewport, x, y) {
-  return {
-    x: x + viewport.width / 2,
-    y: viewport.height / 2 - y,
-  };
-}
-
-function makeTextCanvas({
-  color,
-  fontSize,
-  text,
-  paddingXScale = LOADING_OVERLAY_CONFIG.twinPaddingXScale,
-  paddingYScale = LOADING_OVERLAY_CONFIG.twinPaddingYScale,
-}) {
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  const font = `400 ${fontSize}px ${AREA_FONT_FAMILY}`;
-  const paddingX = Math.ceil(fontSize * paddingXScale);
-  const paddingY = Math.ceil(fontSize * paddingYScale);
-
-  context.font = font;
-  const metrics = context.measureText(text);
-  const width = Math.ceil(metrics.width + paddingX * 2);
-  const height = Math.ceil(fontSize * 1.24 + paddingY * 2);
-
-  canvas.width = width;
-  canvas.height = height;
-
-  const drawContext = canvas.getContext("2d");
-  drawContext.clearRect(0, 0, width, height);
-  drawContext.font = font;
-  drawContext.textAlign = "left";
-  drawContext.textBaseline = "middle";
-  drawContext.fillStyle = color;
-  drawContext.fillText(text, paddingX, height / 2);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
-
-  return {
-    bounds: getCanvasAlphaBounds(canvas),
-    canvas,
-    texture,
-  };
-}
-
-function drawRoundedRect(context, x, y, width, height, radius) {
-  const nextRadius = Math.min(radius, width / 2, height / 2);
-
-  context.beginPath();
-  context.moveTo(x + nextRadius, y);
-  context.lineTo(x + width - nextRadius, y);
-  context.quadraticCurveTo(x + width, y, x + width, y + nextRadius);
-  context.lineTo(x + width, y + height - nextRadius);
-  context.quadraticCurveTo(x + width, y + height, x + width - nextRadius, y + height);
-  context.lineTo(x + nextRadius, y + height);
-  context.quadraticCurveTo(x, y + height, x, y + height - nextRadius);
-  context.lineTo(x, y + nextRadius);
-  context.quadraticCurveTo(x, y, x + nextRadius, y);
-  context.closePath();
-}
-
-function getCanvasAlphaBounds(canvas) {
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  const { width, height } = canvas;
-  const pixels = context.getImageData(0, 0, width, height).data;
-  let left = width;
-  let right = -1;
-  let top = height;
-  let bottom = -1;
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const alpha = pixels[(y * width + x) * 4 + 3];
-      if (alpha === 0)
-        continue;
-
-      if (x < left)
-        left = x;
-      if (x > right)
-        right = x;
-      if (y < top)
-        top = y;
-      if (y > bottom)
-        bottom = y;
-    }
-  }
-
-  if (right < left || bottom < top) {
-    return {
-      bottom: height,
-      left: 0,
-      right: width,
-      top: 0,
-    };
-  }
-
-  return {
-    bottom: bottom + 1,
-    left,
-    right: right + 1,
-    top,
-  };
-}
-
-function getCanvasAlphaCentroid(canvas) {
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  const { width, height } = canvas;
-  const pixels = context.getImageData(0, 0, width, height).data;
-  let weightSum = 0;
-  let weightedX = 0;
-  let weightedY = 0;
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const alpha = pixels[(y * width + x) * 4 + 3];
-      if (alpha === 0)
-        continue;
-
-      weightSum += alpha;
-      weightedX += (x + 0.5) * alpha;
-      weightedY += (y + 0.5) * alpha;
-    }
-  }
-
-  if (weightSum === 0) {
-    return {
-      x: width / 2,
-      y: height / 2,
-    };
-  }
-
-  return {
-    x: weightedX / weightSum,
-    y: weightedY / weightSum,
-  };
-}
-
-function getCompositeLogoBounds({
-  twinCanvas,
-  twinX,
-  twinY,
-  twinClipRight,
-  zCanvas,
-  zX,
-  zY,
-}) {
-  const minX = Math.floor(Math.min(twinX - twinCanvas.width / 2, zX - zCanvas.width / 2));
-  const maxX = Math.ceil(Math.max(twinX + twinCanvas.width / 2, zX + zCanvas.width / 2));
-  const minY = Math.floor(Math.min(twinY - twinCanvas.height / 2, zY - zCanvas.height / 2));
-  const maxY = Math.ceil(Math.max(twinY + twinCanvas.height / 2, zY + zCanvas.height / 2));
-
-  const compositeCanvas = document.createElement("canvas");
-  compositeCanvas.width = Math.max(1, maxX - minX);
-  compositeCanvas.height = Math.max(1, maxY - minY);
-
-  const context = compositeCanvas.getContext("2d");
-  const twinLeft = twinX - twinCanvas.width / 2 - minX;
-  const twinTop = maxY - (twinY + twinCanvas.height / 2);
-  const zLeft = zX - zCanvas.width / 2 - minX;
-  const zTop = maxY - (zY + zCanvas.height / 2);
-
-  context.save();
-  context.beginPath();
-  context.rect(0, 0, Math.max(0, twinClipRight - minX), compositeCanvas.height);
-  context.clip();
-  context.drawImage(twinCanvas, twinLeft, twinTop);
-  context.restore();
-  context.drawImage(zCanvas, zLeft, zTop);
-
-  const bounds = getCanvasAlphaBounds(compositeCanvas);
-  const centroid = getCanvasAlphaCentroid(compositeCanvas);
-
-  return {
-    bottom: maxY - bounds.bottom,
-    centroid: {
-      x: minX + centroid.x,
-      y: maxY - centroid.y,
-    },
-    left: minX + bounds.left,
-    right: minX + bounds.right,
-    top: maxY - bounds.top,
-  };
-}
-
-function makeKnockoutBadgeCanvas({
-  badgeColor,
-  fontSize,
-  text,
-  paddingXScale = LOADING_OVERLAY_CONFIG.zPaddingXScale,
-  paddingTopScale = LOADING_OVERLAY_CONFIG.zPaddingTopScale,
-  paddingBottomScale = LOADING_OVERLAY_CONFIG.zPaddingBottomScale,
-  radiusScale = LOADING_OVERLAY_CONFIG.zCornerRadiusScale,
-}) {
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  const font = `400 ${fontSize}px ${AREA_FONT_FAMILY}`;
-  const paddingX = Math.ceil(fontSize * paddingXScale);
-  const paddingTop = Math.ceil(fontSize * paddingTopScale);
-  const paddingBottom = Math.ceil(fontSize * paddingBottomScale);
-  const radius = Math.ceil(fontSize * radiusScale);
-
-  context.font = font;
-  const metrics = context.measureText(text);
-  const width = Math.ceil(metrics.width + paddingX * 2);
-  const innerHeight = Math.ceil(fontSize * 0.94);
-  const height = innerHeight + paddingTop + paddingBottom;
-
-  canvas.width = width;
-  canvas.height = height;
-
-  const drawContext = canvas.getContext("2d");
-  drawContext.clearRect(0, 0, width, height);
-  drawContext.fillStyle = badgeColor;
-  drawRoundedRect(drawContext, 0, 0, width, height, radius);
-  drawContext.fill();
-
-  drawContext.globalCompositeOperation = "destination-out";
-  drawContext.font = font;
-  drawContext.textAlign = "left";
-  drawContext.textBaseline = "middle";
-  drawContext.fillStyle = "#000000";
-  drawContext.fillText(text, paddingX, paddingTop + innerHeight / 2);
-  drawContext.globalCompositeOperation = "source-over";
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
-
-  return {
-    bounds: getCanvasAlphaBounds(canvas),
-    canvas,
-    texture,
-  };
-}
-
 class LoadingOverlayScene {
   constructor({ config, container, onFinish }) {
     this.config = config;
@@ -446,7 +117,6 @@ class LoadingOverlayScene {
     });
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera();
-    this.twinClipPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 999999);
     this.logoAssets = null;
     this.zAssetSize = null;
     this.zAssetUrl = null;
@@ -462,7 +132,6 @@ class LoadingOverlayScene {
     this.handleResize = this.handleResize.bind(this);
     this.render = this.render.bind(this);
     this.renderer.setClearColor(0x000000, 0);
-    this.renderer.localClippingEnabled = true;
     this.container.style.backgroundColor = this.activeConfig.backgroundColor;
     this.renderer.domElement.style.position = "absolute";
     this.renderer.domElement.style.inset = "0";
@@ -477,11 +146,6 @@ class LoadingOverlayScene {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
     this.render();
-    ensureAreaKilometerFont().then(() => {
-      if (!this.isDisposed) {
-        this.rebuildLogo();
-      }
-    });
   }
 
   getViewport() {
@@ -598,27 +262,13 @@ class LoadingOverlayScene {
 
   rebuildLogo() {
     if (this.logoAssets) {
-      this.logoGroup.remove(this.logoAssets.twinMesh);
       this.logoGroup.remove(this.logoAssets.zMesh);
-      this.logoAssets.twinMesh.geometry.dispose();
       this.logoAssets.zMesh.geometry.dispose();
-      this.logoAssets.twinMaterial.dispose();
       this.logoAssets.zMaterial.dispose();
-      this.logoAssets.twinTexture.dispose();
       this.logoAssets.zTexture.dispose();
     }
 
-    const baseText = this.activeConfig.logoText.slice(0, -1) || "Twin";
-    const animatedText = this.activeConfig.logoText.slice(-1) || "Z";
-    const twinFontSize = this.activeConfig.twinLogoSize ?? this.activeConfig.logoSize;
     const zFontSize = this.activeConfig.zLogoSize ?? this.activeConfig.logoSize;
-    const twinCanvas = makeTextCanvas({
-      color: this.activeConfig.logoColor,
-      fontSize: twinFontSize,
-      paddingXScale: this.activeConfig.twinPaddingXScale,
-      paddingYScale: this.activeConfig.twinPaddingYScale,
-      text: baseText,
-    });
     const useZDomAsset = Boolean(this.activeConfig.zAssetUrl && this.zAssetSize);
     let zCanvas;
     if (useZDomAsset) {
@@ -641,146 +291,86 @@ class LoadingOverlayScene {
         texture,
       };
     } else {
-      zCanvas = makeKnockoutBadgeCanvas({
-        badgeColor: this.activeConfig.animatedLetterColor,
-        fontSize: zFontSize,
-        paddingXScale: this.activeConfig.zPaddingXScale,
-        paddingTopScale: this.activeConfig.zPaddingTopScale,
-        paddingBottomScale: this.activeConfig.zPaddingBottomScale,
-        radiusScale: this.activeConfig.zCornerRadiusScale,
-        text: animatedText,
-      });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      const font = `400 ${zFontSize}px system-ui, -apple-system, sans-serif`;
+      const paddingX = Math.ceil(zFontSize * (this.activeConfig.zPaddingXScale ?? 0.34));
+      const paddingTop = Math.ceil(zFontSize * (this.activeConfig.zPaddingTopScale ?? 0.1));
+      const paddingBottom = Math.ceil(zFontSize * (this.activeConfig.zPaddingBottomScale ?? 0.01));
+      const radius = Math.ceil(zFontSize * (this.activeConfig.zCornerRadiusScale ?? 0.22));
+
+      context.font = font;
+      const metrics = context.measureText(this.activeConfig.logoText.slice(-1) || "Z");
+      const width = Math.ceil(metrics.width + paddingX * 2);
+      const innerHeight = Math.ceil(zFontSize * 0.94);
+      const height = innerHeight + paddingTop + paddingBottom;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const drawContext = canvas.getContext("2d");
+      drawContext.clearRect(0, 0, width, height);
+      drawContext.fillStyle = this.activeConfig.animatedLetterColor;
+
+      // Draw rounded rect
+      const r = Math.min(radius, width / 2, height / 2);
+      drawContext.beginPath();
+      drawContext.moveTo(r, 0);
+      drawContext.lineTo(width - r, 0);
+      drawContext.quadraticCurveTo(width, 0, width, r);
+      drawContext.lineTo(width, height - r);
+      drawContext.quadraticCurveTo(width, height, width - r, height);
+      drawContext.lineTo(r, height);
+      drawContext.quadraticCurveTo(0, height, 0, height - r);
+      drawContext.lineTo(0, r);
+      drawContext.quadraticCurveTo(0, 0, r, 0);
+      drawContext.closePath();
+      drawContext.fill();
+
+      drawContext.globalCompositeOperation = "destination-out";
+      drawContext.font = font;
+      drawContext.textAlign = "left";
+      drawContext.textBaseline = "middle";
+      drawContext.fillStyle = "#000000";
+      drawContext.fillText(this.activeConfig.logoText.slice(-1) || "Z", paddingX, paddingTop + innerHeight / 2);
+      drawContext.globalCompositeOperation = "source-over";
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+
+      zCanvas = {
+        bounds: { bottom: height, left: 0, right: width, top: 0 },
+        canvas,
+        texture,
+      };
     }
 
-    const twinMaterial = new THREE.MeshBasicMaterial({
-      clippingPlanes: [this.twinClipPlane],
-      map: twinCanvas.texture,
-      transparent: true,
-      opacity: 1,
-    });
     const zMaterial = new THREE.MeshBasicMaterial({
       map: zCanvas.texture,
       transparent: true,
       opacity: zCanvas.isSvgAsset ? 0 : 1,
     });
 
-    const twinMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(twinCanvas.canvas.width, twinCanvas.canvas.height),
-      twinMaterial,
-    );
     const zMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(zCanvas.canvas.width, zCanvas.canvas.height),
       zMaterial,
     );
+    zMesh.position.set(0, this.activeConfig.zOffsetY ?? 0, 0);
 
-    const gap = this.activeConfig.logoGap ?? Math.max(2, Math.min(twinFontSize, zFontSize) * 0.01);
-    const totalWidth = twinCanvas.canvas.width + zCanvas.canvas.width + gap;
-    twinMesh.position.x = -totalWidth / 2 + twinCanvas.canvas.width / 2;
-    zMesh.position.x = totalWidth / 2 - zCanvas.canvas.width / 2;
-    zMesh.position.y = this.activeConfig.zOffsetY ?? 0;
-    const badgeLeftEdge = zMesh.position.x - zCanvas.canvas.width / 2;
-
-    const compositeBounds = getCompositeLogoBounds({
-      twinCanvas: twinCanvas.canvas,
-      twinClipRight: badgeLeftEdge,
-      twinX: twinMesh.position.x,
-      twinY: twinMesh.position.y,
-      zCanvas: zCanvas.canvas,
-      zX: zMesh.position.x,
-      zY: zMesh.position.y,
-    });
-    const centerX = compositeBounds.centroid.x;
-    const centerY = compositeBounds.centroid.y;
-
-    twinMesh.position.x -= centerX;
-    twinMesh.position.y -= centerY;
-    zMesh.position.x -= centerX;
-    zMesh.position.y -= centerY;
-
-    const finalCompositeBounds = {
-      bottom: compositeBounds.bottom - centerY,
-      centroid: {
-        x: compositeBounds.centroid.x - centerX,
-        y: compositeBounds.centroid.y - centerY,
-      },
-      left: compositeBounds.left - centerX,
-      right: compositeBounds.right - centerX,
-      top: compositeBounds.top - centerY,
-    };
-
-    this.logoGroup.add(twinMesh);
     this.logoGroup.add(zMesh);
 
     this.logoAssets = {
-      animatedText,
-      gap,
-      twinStartX: twinMesh.position.x,
-      twinMesh,
-      twinMaterial,
-      twinTexture: twinCanvas.texture,
-      twinWidth: twinCanvas.canvas.width,
-      zStartX: zMesh.position.x,
       zUsesSvgAsset: Boolean(zCanvas.isSvgAsset),
       zMesh,
       zMaterial,
       zTexture: zCanvas.texture,
       zWidth: zCanvas.canvas.width,
+      zHeight: zCanvas.canvas.height,
     };
     this.syncZDomImage();
-
-    if (DEBUG_LOGO_LAYOUT) {
-      this.logLogoScreenPosition({
-        compositeBounds: finalCompositeBounds,
-        twinMesh,
-        viewport: this.getViewport(),
-        zMesh,
-      });
-    }
-  }
-
-  logLogoScreenPosition({ viewport, twinMesh, zMesh, compositeBounds }) {
-    const twinCenter = worldToScreenPoint(viewport, twinMesh.position.x, twinMesh.position.y);
-    const zCenter = worldToScreenPoint(viewport, zMesh.position.x, zMesh.position.y);
-    const compositeBoundsCenterWorld = {
-      x: (compositeBounds.left + compositeBounds.right) / 2,
-      y: (compositeBounds.top + compositeBounds.bottom) / 2,
-    };
-    const compositeBoundsCenter = worldToScreenPoint(
-      viewport,
-      compositeBoundsCenterWorld.x,
-      compositeBoundsCenterWorld.y,
-    );
-    const compositeCentroid = worldToScreenPoint(
-      viewport,
-      compositeBounds.centroid.x,
-      compositeBounds.centroid.y,
-    );
-    const compositeBoundsScreen = {
-      bottom: viewport.height / 2 - compositeBounds.bottom,
-      left: compositeBounds.left + viewport.width / 2,
-      right: compositeBounds.right + viewport.width / 2,
-      top: viewport.height / 2 - compositeBounds.top,
-    };
-    const configSnapshot = {
-      logoGap: this.activeConfig.logoGap,
-      twinLogoSize: this.activeConfig.twinLogoSize ?? this.activeConfig.logoSize,
-      zLogoSize: this.activeConfig.zLogoSize ?? this.activeConfig.logoSize,
-      zOffsetY: this.activeConfig.zOffsetY,
-    };
-
-    console.groupCollapsed("[ThreeLoadingOverlay] Logo screen position");
-    console.log("viewport", viewport);
-    console.log("visualViewport", viewport.visualViewport);
-    console.table({
-      compositeBoundsCenter,
-      compositeCentroid,
-      twinCenter,
-      zCenter,
-    });
-    console.log("compositeBounds", compositeBounds);
-    console.log("compositeBoundsScreen", compositeBoundsScreen);
-    console.log("configSnapshot", configSnapshot);
-    console.groupEnd();
   }
 
   syncZDomImage() {
@@ -823,12 +413,8 @@ class LoadingOverlayScene {
       0.18,
       this.activeConfig.transitionDuration - this.activeConfig.sliceStagger * (this.slices.length - 1),
     );
-    const logoDisappearDuration = Math.max(0.12, this.activeConfig.logoDisappearDuration);
     const zPhaseDuration = Math.max(0.08, this.activeConfig.zFadeDuration ?? 0.16);
-    const twinPhaseDuration = logoDisappearDuration;
-    const targetCenterX = 0;
-    const logoEndAt = twinPhaseDuration + zPhaseDuration;
-    const slicesStartAt = logoEndAt;
+    const slicesStartAt = zPhaseDuration;
     const slicesEndAt =
       slicesStartAt
       + this.activeConfig.sliceStagger * Math.max(0, this.slices.length - 1)
@@ -841,47 +427,7 @@ class LoadingOverlayScene {
       },
     });
 
-    this.exitTimeline.to(
-      this.logoAssets.twinMesh.position,
-      {
-        duration: twinPhaseDuration,
-        ease: "power2.inOut",
-        x: targetCenterX,
-      },
-      0,
-    );
-
-    this.exitTimeline.to(
-      this.logoAssets.zMesh.position,
-      {
-        duration: twinPhaseDuration,
-        ease: "power2.inOut",
-        x: targetCenterX,
-      },
-      0,
-    );
-
-    this.exitTimeline.to(
-      this.logoAssets.twinMaterial,
-      {
-        duration: twinPhaseDuration * 0.6,
-        ease: "power2.in",
-        opacity: 0,
-      },
-      twinPhaseDuration * 0.34,
-    );
-
-    this.exitTimeline.to(
-      this.logoAssets.twinMesh.scale,
-      {
-        duration: twinPhaseDuration * 0.68,
-        ease: "power2.in",
-        x: 0.12,
-        y: 0.92,
-      },
-      twinPhaseDuration * 0.1,
-    );
-
+    // Fade out Z
     this.exitTimeline.to(
       this.logoAssets.zMaterial,
       {
@@ -889,7 +435,7 @@ class LoadingOverlayScene {
         ease: "power2.out",
         opacity: 0,
       },
-      twinPhaseDuration,
+      0,
     );
 
     if (this.zDomImage && this.logoAssets.zUsesSvgAsset) {
@@ -900,10 +446,11 @@ class LoadingOverlayScene {
           ease: "power2.out",
           opacity: 0,
         },
-        twinPhaseDuration,
+        0,
       );
     }
 
+    // Slices fall
     this.slices.forEach((slice, index) => {
       const rotationTarget = THREE.MathUtils.randFloatSpread(0.18);
       const startAt = slicesStartAt + index * this.activeConfig.sliceStagger;
@@ -960,12 +507,8 @@ class LoadingOverlayScene {
     if (this.isDisposed)
       return;
 
-    if (this.logoAssets) {
-      const badgeLeftEdge = this.logoAssets.zMesh.position.x - this.logoAssets.zWidth / 2;
-      this.twinClipPlane.constant = badgeLeftEdge;
-      if (this.logoAssets.zUsesSvgAsset) {
-        this.syncZDomImage();
-      }
+    if (this.logoAssets?.zUsesSvgAsset) {
+      this.syncZDomImage();
     }
 
     this.rafId = window.requestAnimationFrame(this.render);
@@ -984,13 +527,9 @@ class LoadingOverlayScene {
     this.clearSlices();
 
     if (this.logoAssets) {
-      this.logoGroup.remove(this.logoAssets.twinMesh);
       this.logoGroup.remove(this.logoAssets.zMesh);
-      this.logoAssets.twinMesh.geometry.dispose();
       this.logoAssets.zMesh.geometry.dispose();
-      this.logoAssets.twinMaterial.dispose();
       this.logoAssets.zMaterial.dispose();
-      this.logoAssets.twinTexture.dispose();
       this.logoAssets.zTexture.dispose();
       this.logoAssets = null;
     }
@@ -998,17 +537,18 @@ class LoadingOverlayScene {
     this.zDomImage?.remove();
     this.zDomImage = null;
 
-    this.scene.clear();
-    this.renderer.dispose();
+    this.scene.remove(this.sliceGroup);
+    this.scene.remove(this.logoGroup);
     this.renderer.domElement.remove();
+    this.renderer.dispose();
   }
 }
 
 export default function ThreeLoadingOverlay({
-  config = LOADING_OVERLAY_CONFIG,
-  isReady,
-  onMounted,
+  config,
+  isReady = false,
   onExited,
+  onMounted,
 }) {
   const containerRef = useRef(null);
   const overlayRef = useRef(null);
@@ -1058,23 +598,6 @@ export default function ThreeLoadingOverlay({
       className="pointer-events-none fixed inset-0 z-[60] overflow-hidden"
       data-initial-loading-overlay="true"
       ref={containerRef}
-    >
-      <LoadingPeripheralDetails
-        color={mergedConfig.animatedLetterColor}
-        isExiting={isExiting}
-      />
-    </div>
+    />
   );
-}
-
-function makeLayoutBoundsCanvas(width, height) {
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(width));
-  canvas.height = Math.max(1, Math.round(height));
-
-  const context = canvas.getContext("2d");
-  context.fillStyle = "#000000";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  return canvas;
 }

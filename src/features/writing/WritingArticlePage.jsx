@@ -411,7 +411,7 @@ export default function WritingArticlePage({ post }) {
                   {post.category}
                 </span>
                 <span className="ml-auto text-[11px] uppercase tracking-[0.22em]" style={{ color: colorMap.coral }}>
-                  {post.tags?.[0] ?? "Lifestyle"} / 鍐欎綔
+                  {post.tags?.[0] ?? "Lifestyle"} / 写作
                 </span>
               </div>
             </header>

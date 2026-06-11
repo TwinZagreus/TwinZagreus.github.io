@@ -67,8 +67,12 @@ function getStoredContourFrameProfileName() {
   return "";
 }
 
+function isSoftwareRenderer(rendererName = "") {
+  return /microsoft basic|swiftshader|llvmpipe/i.test(rendererName);
+}
+
 function isLikelyLowPowerRenderer(rendererName = "") {
-  return /intel\(r\).*(uhd|hd|iris|graphics)|intel.*(uhd|hd|iris|graphics)|microsoft basic|swiftshader|llvmpipe/i.test(
+  return /intel\(r\).*(uhd|hd|iris|graphics)|intel.*(uhd|hd|iris|graphics)/i.test(
     rendererName,
   );
 }
@@ -554,7 +558,7 @@ function ContourField({ controlsRef, isReducedMotion }) {
   );
 }
 
-function ContourGpuProfileProbe({ onLowPowerGpuDetected }) {
+function ContourGpuProfileProbe({ onSoftwareRendererDetected, onLowPowerGpuDetected }) {
   const gl = useThree((state) => state.gl);
 
   useEffect(() => {
@@ -564,19 +568,24 @@ function ContourGpuProfileProbe({ onLowPowerGpuDetected }) {
       ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
       : "";
 
+    if (isSoftwareRenderer(rendererName)) {
+      onSoftwareRendererDetected();
+      return;
+    }
+
     if (isLikelyLowPowerRenderer(rendererName)) {
       onLowPowerGpuDetected();
     }
-  }, [gl, onLowPowerGpuDetected]);
+  }, [gl, onSoftwareRendererDetected, onLowPowerGpuDetected]);
 
   return null;
 }
-
 export const ContourCanvas = memo(function ContourCanvas({
   controlsRef,
   isReducedMotion,
 }) {
   const canvasHostRef = useRef(null);
+  const [isSoftwareRendering, setIsSoftwareRendering] = useState(false);
   const [hasLowPowerGpu, setHasLowPowerGpu] = useState(false);
   const isPageVisible = usePageVisibility();
   const performanceProfile = useContourPerformanceProfile(
@@ -584,6 +593,9 @@ export const ContourCanvas = memo(function ContourCanvas({
     hasLowPowerGpu,
   );
   const [eventSource, setEventSource] = useState(null);
+  const handleSoftwareRendererDetected = useCallback(() => {
+    setIsSoftwareRendering(true);
+  }, []);
   const handleLowPowerGpuDetected = useCallback(() => {
     setHasLowPowerGpu(true);
   }, []);
@@ -591,6 +603,10 @@ export const ContourCanvas = memo(function ContourCanvas({
   useEffect(() => {
     setEventSource(canvasHostRef.current);
   }, []);
+
+  if (isSoftwareRendering) {
+    return null;
+  }
 
   return (
     <div aria-hidden className="h-screen h-[100dvh]" ref={canvasHostRef}>
@@ -612,6 +628,7 @@ export const ContourCanvas = memo(function ContourCanvas({
         >
           <ContourGpuProfileProbe
             onLowPowerGpuDetected={handleLowPowerGpuDetected}
+            onSoftwareRendererDetected={handleSoftwareRendererDetected}
           />
           <ContourField
             controlsRef={controlsRef}
@@ -787,7 +804,7 @@ export default function PerlinContoursPage() {
                     className="text-[clamp(1.15rem,min(2.2vw,4.2vh),2.6rem)] tracking-[0.22em]"
                     style={{ color: colorMap.coral }}
                   >
-                    璁板綍鐏垫劅锛屾帰绱㈣〃杈剧殑杈圭晫銆?
+                    记录灵感，探索表达的边界。
                   </div>
                   <div className="flex items-center justify-center gap-4">
                     <span
@@ -835,10 +852,10 @@ export default function PerlinContoursPage() {
                   }}
                 >
                   {[
-                    ["鐢?/ Tian", "濮?/ Surname"],
-                    ["543150640@qq.com", "閭 / Email"],
-                    ["15886371859", "鐢佃瘽 / Phone"],
-                    [`${age}`, "骞撮緞 / Age"],
+                    ["Twin / 田", "姓 / Surname"],
+                    ["543150640@qq.com", "邮箱 / Email"],
+                    ["15886371859", "电话 / Phone"],
+                    [`${age}`, "年龄 / Age"],
                   ].map(([value, label], index) => (
                     <div
                       className={index ? "border-l" : ""}
@@ -881,7 +898,7 @@ export default function PerlinContoursPage() {
                 }}
                 type="button"
               >
-                鈫?
+                ←
               </button>
 
               <div
@@ -929,7 +946,7 @@ export default function PerlinContoursPage() {
                 }}
                 type="button"
               >
-                鈫?
+                →
               </button>
               </div>
             </section>

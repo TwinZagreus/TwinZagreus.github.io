@@ -80,7 +80,8 @@ export default function LoadingOverlayLabPage() {
             <div>
               <div className="text-[10px] uppercase tracking-[0.34em] text-[#7d8793]">Static Loading Preview</div>
               <div className="mt-2 text-sm leading-6 text-[#6a7380]">
-                闁荤姴顑呴崯顖炲汲閿濆棗绶炵憸宥夋儍椤掑嫬妞界€光偓閸曨剨绱甸柣鐘靛劋缁绘劗妲愬┑鍫熷厹妞ゆ梹顑欓崥鍥煕閹烘挾绠撴い顐ｅ姍瀵悂宕熼锝囶洯闂侀潧妫楅崐鐣屾崲閺嶃劎鈻旀い蹇撶墑閳ь剙顦靛Λ鍐綖椤撶姷鎲规繛鏉戝悑娣囨椽宕靛鍫濈闁靛闄勭亸锟犳煛閳ь剚銈ｉ崘锝呬壕闁逞屽墴瀹曟瑩宕崟顐嶆鏌ｉ姀锛勬菇闁?              </div>
+                在这里调整 TwinZ 标志的大小、间距和过渡行为，实时预览加载动画效果。拖动滑块即可看到变化。
+              </div>
             </div>
             <AppButton
               onClick={reset}
