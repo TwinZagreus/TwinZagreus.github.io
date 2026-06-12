@@ -253,7 +253,6 @@ button {
 .theme-option-pop {
   --target-y: var(--target-y-mobile);
   backface-visibility: hidden;
-  contain: paint;
   opacity: 0;
   pointer-events: none;
   transform: translate3d(0, calc(var(--target-y) + 10px), 0) scale(0.96);

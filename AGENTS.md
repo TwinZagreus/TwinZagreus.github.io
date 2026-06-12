@@ -20,6 +20,17 @@ Default combinations:
 - Three.js interaction: `threejs-interaction` + `threejs-fundamentals`
 - SVG/logo motion: `svg-animations` + `SVG Logo Designer`
 
+## Skill Auto-Loading
+
+Every time the user asks a question or gives a task, you MUST:
+
+1. Scan the `<available_skills>` list in your system prompt
+2. Think about which skills might be relevant to the task (even partially)
+3. If any skill seems relevant, load it with `skill_view(name)` before responding
+4. Don't wait for the user to ask — be proactive
+
+This is not optional. Skills contain specialized knowledge that improves your answers.
+
 ## Implementation Preferences
 
 - Preserve the existing theme system and use project theme colors instead of hardcoded colors whenever practical.

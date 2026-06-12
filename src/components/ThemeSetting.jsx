@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { alpha } from "@mui/material/styles";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -94,6 +94,26 @@ function LyricsToggleIcon({ color, isOpen }) {
   );
 }
 
+function ChevronIcon({ color, isOpen }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4 transition-transform duration-200"
+      fill="none"
+      style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M9 6L15 12L9 18"
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
 export default function ThemeSetting() {
   const {
     beginSilentSeek,
@@ -109,6 +129,7 @@ export default function ThemeSetting() {
   } = useAudioPlayer();
   const { colorMap, setThemeIndex, themeIndex, themeOption } = useProjectTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const rotationFrameRef = useRef(0);
   const rotationPreviousTimeRef = useRef(0);
   const rotationValueRef = useRef(0);
@@ -168,73 +189,76 @@ export default function ThemeSetting() {
   return (
     <>
       <div
-        className="fixed bottom-[50px] right-[50px] z-50 flex items-end gap-3"
+        className="fixed bottom-4 right-4 z-50 flex items-end gap-2 sm:bottom-[50px] sm:right-[50px] sm:gap-3 max-lg:items-center"
         data-audio-controls="true"
         ref={rootRef}
       >
+        {/* Main controls container */}
         <div
-          aria-hidden={!isOpen}
-          aria-label="Theme options"
-          className="relative h-[272px] w-12 sm:h-[312px] sm:w-14"
-          role="menu"
-        >
-          {BASE_COLOR_LIST.map((option, itemIndex) => {
-            const isActive = option.index === themeIndex;
-
-            return (
-              <button
-                aria-label={`Switch theme to ${option.context}`}
-                aria-pressed={isActive}
-                className="theme-option-pop group absolute right-0 grid h-12 w-12 place-items-center rounded-full border text-[12px] font-bold sm:h-14 sm:w-14"
-                data-open={isOpen ? "true" : "false"}
-                key={option.index}
-                onClick={() => setThemeIndex(option.index)}
-                role="menuitem"
-                tabIndex={isOpen ? 0 : -1}
-                title={`${option.title} / ${option.context}`}
-                style={{
-                  "--target-y-desktop": `${itemIndex * 64}px`,
-                  "--target-y-mobile": `${itemIndex * 56}px`,
-                  backgroundColor: MAIN_BACKGROUND_COLOR,
-                  borderColor: isActive ? option.color : alpha(colorMap.ink950, 0.16),
-                  boxShadow: isActive
-                    ? `0 0 0 4px ${alpha(option.color, 0.14)}, 0 16px 34px ${alpha(colorMap.ink950, 0.2)}`
-                    : `0 12px 26px ${alpha(colorMap.ink950, 0.12)}`,
-                  color: colorMap.ink950,
-                  animationDelay: isOpen ? `${itemIndex * 30}ms` : "0ms",
-                  transitionDelay: isOpen
-                    ? `${itemIndex * 28}ms`
-                    : `${(BASE_COLOR_LIST.length - 1 - itemIndex) * 16}ms`,
-                }}
-                type="button"
-              >
-                <span
-                  className="absolute inset-[9px] rounded-full opacity-90 transition group-hover:scale-110"
-                  style={{ backgroundColor: option.color }}
-                />
-                <span
-                  className="relative grid h-6 w-6 place-items-center rounded-full text-[11px] tracking-[0.08em]"
-                  style={{
-                    backgroundColor: alpha(colorMap.ink950, 0.64),
-                    color: colorMap.coral100,
-                  }}
-                >
-                  {option.title}
-                </span>
-                <span className="sr-only">{option.context}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div
-          className="flex items-center gap-1 rounded-full border p-1.5 backdrop-blur-[6px] sm:gap-1.5 sm:p-2"
+          className={`flex items-center gap-2 rounded-full border p-1.5 backdrop-blur-[6px] sm:gap-1 sm:p-1 ${isCollapsed ? "invisible pointer-events-none" : ""}`}
           style={{
             backgroundColor: alpha(colorMap.ink950, 0.16),
             borderColor: alpha(colorMap.ink950, 0.42),
             boxShadow: `0 18px 42px ${alpha(colorMap.ink950, 0.24)}`,
           }}
         >
+          {/* Theme options popup */}
+          <div
+            aria-hidden={!isOpen}
+            aria-label="Theme options"
+            className="absolute bottom-1.5 right-full mr-1 h-[228px] w-11 overflow-visible sm:bottom-1 sm:mr-1.5 sm:h-[256px] sm:w-12"
+            role="menu"
+          >
+            {BASE_COLOR_LIST.map((option, itemIndex) => {
+              const isActive = option.index === themeIndex;
+
+              return (
+                <button
+                  aria-label={`Switch theme to ${option.context}`}
+                  aria-pressed={isActive}
+                  className="theme-option-pop group absolute right-0 grid h-11 w-11 place-items-center rounded-full border text-[11px] font-bold sm:h-12 sm:w-12"
+                  data-open={isOpen ? "true" : "false"}
+                  key={option.index}
+                  onClick={() => setThemeIndex(option.index)}
+                  role="menuitem"
+                  tabIndex={isOpen ? 0 : -1}
+                  title={`${option.title} / ${option.context}`}
+                  style={{
+                    "--target-y-desktop": `${itemIndex * 52}px`,
+                    "--target-y-mobile": `${itemIndex * 46}px`,
+                    backgroundColor: MAIN_BACKGROUND_COLOR,
+                    borderColor: isActive ? option.color : alpha(colorMap.ink950, 0.16),
+                    boxShadow: isActive
+                      ? `0 0 0 4px ${alpha(option.color, 0.14)}, 0 16px 34px ${alpha(colorMap.ink950, 0.2)}`
+                      : `0 12px 26px ${alpha(colorMap.ink950, 0.12)}`,
+                    color: colorMap.ink950,
+                    animationDelay: isOpen ? `${itemIndex * 30}ms` : "0ms",
+                    transitionDelay: isOpen
+                      ? `${itemIndex * 28}ms`
+                      : `${(BASE_COLOR_LIST.length - 1 - itemIndex) * 16}ms`,
+                  }}
+                  type="button"
+                >
+                  <span
+                    className="absolute inset-[9px] rounded-full opacity-90 transition group-hover:scale-110"
+                    style={{ backgroundColor: option.color }}
+                  />
+                  <span
+                    className="relative grid h-6 w-6 place-items-center rounded-full text-[11px] tracking-[0.08em]"
+                    style={{
+                      backgroundColor: alpha(colorMap.ink950, 0.64),
+                      color: colorMap.coral100,
+                    }}
+                  >
+                    {option.title}
+                  </span>
+                  <span className="sr-only">{option.context}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Setting button */}
           <button
             aria-expanded={isOpen}
             aria-label="Toggle theme setting"
@@ -263,6 +287,7 @@ export default function ThemeSetting() {
             />
           </button>
 
+          {/* Play/Pause button */}
           <button
             aria-label={isPlaying ? "Pause audio" : "Play audio"}
             aria-pressed={isPlaying}
@@ -288,10 +313,11 @@ export default function ThemeSetting() {
             />
           </button>
 
+          {/* Lyrics button - desktop only */}
           <button
             aria-expanded={isLyricsOpen}
             aria-label={isLyricsOpen ? "Collapse lyrics" : "Expand lyrics"}
-            className="grid h-11 w-11 place-items-center rounded-full border transition duration-200 ease-out hover:scale-105 sm:h-12 sm:w-12"
+            className="grid h-9 w-9 place-items-center rounded-full border transition duration-200 ease-out hover:scale-105 max-lg:hidden sm:h-12 sm:w-12"
             onClick={() => setIsLyricsOpen((current) => !current)}
             style={{
               ...controlButtonStyle,
@@ -306,6 +332,17 @@ export default function ThemeSetting() {
             <LyricsToggleIcon color={themeOption.color} isOpen={isLyricsOpen} />
           </button>
         </div>
+
+        {/* Collapse/Expand toggle button - mobile only */}
+        <button
+          aria-label={isCollapsed ? "Show controls" : "Hide controls"}
+          className="grid h-11 w-11 place-items-center rounded-full border transition duration-200 ease-out hover:scale-105 lg:hidden"
+          onClick={() => setIsCollapsed((current) => !current)}
+          style={controlButtonStyle}
+          type="button"
+        >
+          <ChevronIcon color={themeOption.color} isOpen={!isCollapsed} />
+        </button>
       </div>
     </>
   );

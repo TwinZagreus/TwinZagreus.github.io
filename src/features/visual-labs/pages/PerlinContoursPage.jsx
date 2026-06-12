@@ -304,12 +304,31 @@ function useCoverPlaneScale(width, height) {
   }, [aspect, viewport.height, viewport.width]);
 }
 
-function AboutDepthScanScene({ scanColor, setLoaded }) {
+function useFitPlaneScale(width, height) {
+  const { viewport } = useThree();
+  const aspect = width / height;
+
+  return useMemo(() => {
+    let w = viewport.width;
+    let h = w / aspect;
+
+    if (h > viewport.height) {
+      h = viewport.height;
+      w = h * aspect;
+    }
+
+    return [w, h, 1];
+  }, [aspect, viewport.height, viewport.width]);
+}
+
+function AboutDepthScanScene({ scanColor, setLoaded, fit = false }) {
   const [rawMap, depthMap] = useLoader(THREE.TextureLoader, [
     ABOUT_IMAGE,
     ABOUT_DEPTH_IMAGE,
   ]);
-  const scale = useCoverPlaneScale(ABOUT_IMAGE_WIDTH, ABOUT_IMAGE_HEIGHT);
+  const coverScale = useCoverPlaneScale(ABOUT_IMAGE_WIDTH, ABOUT_IMAGE_HEIGHT);
+  const fitScale = useFitPlaneScale(ABOUT_IMAGE_WIDTH, ABOUT_IMAGE_HEIGHT);
+  const scale = fit ? fitScale : coverScale;
   const materialRef = useRef(null);
   const pointerRef = useRef(new THREE.Vector2(0, 0));
   const progressRef = useRef(0);
@@ -365,7 +384,7 @@ function AboutDepthScanScene({ scanColor, setLoaded }) {
   );
 }
 
-function AboutDepthScanFrame({ isReducedMotion }) {
+function AboutDepthScanFrame({ isReducedMotion, fit = false }) {
   const { colorMap } = useProjectTheme();
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -373,7 +392,7 @@ function AboutDepthScanFrame({ isReducedMotion }) {
     return (
       <img
         alt="About visual"
-        className="h-full w-full object-cover"
+        className={`h-full w-full ${fit ? "object-contain" : "object-cover"}`}
         draggable="false"
         src={ABOUT_IMAGE}
       />
@@ -384,7 +403,9 @@ function AboutDepthScanFrame({ isReducedMotion }) {
     <div className="relative h-full w-full">
       <img
         alt="About visual"
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+        className={`absolute inset-0 h-full w-full transition-opacity duration-500 ${
+          fit ? "object-contain" : "object-cover"
+        } ${
           isLoaded ? "opacity-0" : "opacity-100"
         }`}
         draggable="false"
@@ -404,6 +425,7 @@ function AboutDepthScanFrame({ isReducedMotion }) {
       >
         <Suspense fallback={null}>
           <AboutDepthScanScene
+            fit={fit}
             scanColor={colorMap.coral}
             setLoaded={setIsLoaded}
           />
@@ -912,8 +934,10 @@ export default function PerlinContoursPage() {
             scrollbar-width: none;
           }
 
-          .perlin-center-panel {
-            scroll-snap-stop: always;
+          @media (min-width: 1024px) {
+            .perlin-center-panel {
+              scroll-snap-stop: always;
+            }
           }
 
           .perlin-center-scroll::-webkit-scrollbar {
@@ -924,7 +948,7 @@ export default function PerlinContoursPage() {
         `}
       </style>
 
-      <section className="relative h-full overflow-hidden px-5 py-6 sm:px-8 lg:px-12">
+      <section className="relative h-full overflow-hidden px-4 py-4 sm:px-8 lg:px-12">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -932,7 +956,7 @@ export default function PerlinContoursPage() {
           }}
         />
 
-        <div className="relative z-20 grid h-full grid-cols-[minmax(150px,0.42fr)_minmax(520px,1.25fr)_minmax(240px,0.46fr)] grid-rows-[auto_1fr] gap-x-8 gap-y-6 max-lg:grid-cols-1">
+        <div className="relative z-20 grid h-full grid-cols-[minmax(150px,0.42fr)_minmax(520px,1.25fr)_minmax(240px,0.46fr)] grid-rows-[auto_1fr] gap-x-8 gap-y-6 max-lg:grid-cols-1 max-lg:gap-y-3">
           <header className="relative col-span-3 grid grid-cols-[1fr_auto_1fr] items-center max-lg:col-span-1">
             <div
               className="flex items-center gap-5 text-xs uppercase tracking-[0.32em]"
@@ -947,7 +971,7 @@ export default function PerlinContoursPage() {
             </div>
 
             <nav
-              className="relative grid w-[19rem] grid-cols-3 items-center text-center text-xs uppercase tracking-[0.32em]"
+              className="relative grid w-[19rem] grid-cols-3 items-center text-center text-xs uppercase tracking-[0.32em] max-lg:hidden"
               style={{ color: colorMap.ink700 }}
             >
               <span
@@ -969,19 +993,19 @@ export default function PerlinContoursPage() {
           <HomeLeftRail />
 
           <div
-            className="perlin-center-scroll min-h-0 overflow-y-auto overscroll-contain snap-y snap-mandatory max-lg:row-start-2"
+            className="perlin-center-scroll min-h-0 overflow-y-auto overscroll-contain snap-y snap-mandatory max-lg:row-start-2 max-lg:snap-none"
             ref={centerScrollRef}
           >
             <section className="perlin-center-panel flex h-full min-h-0 snap-start flex-col items-center justify-evenly py-[clamp(1rem,3.8vh,4.5rem)] text-center">
               <div className="flex flex-col items-center gap-[clamp(1.25rem,5.2vh,5rem)]">
                 <div
-                  className="text-sm uppercase tracking-[0.62em]"
+                  className="text-[10px] uppercase tracking-[0.62em] sm:text-sm"
                   style={{ color: colorMap.coral }}
                 >
                   Design / Code / Motion
                 </div>
                 <h1
-                  className="font-serif text-[clamp(3.2rem,min(9.2vw,15vh),11rem)] uppercase leading-[0.78] tracking-[0.035em]"
+                  className="font-serif text-[clamp(2.4rem,min(9.2vw,15vh),11rem)] uppercase leading-[0.78] tracking-[0.035em]"
                   style={{
                     color: colorMap.ink800,
                     textShadow: `0 14px 42px ${alpha(colorMap.coral, 0.18)}`,
@@ -991,27 +1015,27 @@ export default function PerlinContoursPage() {
                 </h1>
                 <div className="space-y-[clamp(1rem,3vh,3rem)]">
                   <div
-                    className="text-[clamp(1.15rem,min(2.2vw,4.2vh),2.6rem)] tracking-[0.22em]"
+                    className="text-[clamp(0.9rem,min(2.2vw,4.2vh),2.6rem)] tracking-[0.22em]"
                     style={{ color: colorMap.coral }}
                   >
                     记录灵感，探索表达的边界。
                   </div>
                   <div className="flex items-center justify-center gap-4">
                     <span
-                      className="h-px w-16"
-                      style={{ backgroundColor: alpha(colorMap.coral, 0.46) }}
-                    />
-                    <span
-                      className="h-2 w-2 rotate-45"
-                      style={{ backgroundColor: colorMap.coral }}
-                    />
-                    <span
-                      className="h-px w-16"
+                      className="h-px w-10 sm:w-16"
+                                        style={{ backgroundColor: alpha(colorMap.coral, 0.46) }}
+                                      />
+                                      <span
+                                        className="h-2 w-2 rotate-45"
+                                        style={{ backgroundColor: colorMap.coral }}
+                                      />
+                                      <span
+                                        className="h-px w-10 sm:w-16"
                       style={{ backgroundColor: alpha(colorMap.coral, 0.46) }}
                     />
                   </div>
                   <p
-                    className="max-w-3xl text-base leading-loose tracking-[0.18em]"
+                    className="max-w-3xl text-sm leading-loose tracking-[0.18em] sm:text-base"
                     style={{ color: colorMap.ink700 }}
                   >
                     I design digital experiences that move with purpose and
@@ -1034,7 +1058,7 @@ export default function PerlinContoursPage() {
                 </div>
 
                 <div
-                  className="grid w-[min(960px,86vw)] grid-cols-[0.78fr_1.35fr_1.18fr_0.72fr] items-center border px-6 py-5 text-center backdrop-blur-[2px]"
+                  className="grid w-[min(960px,92vw)] grid-cols-2 items-center border px-3 py-3 text-center backdrop-blur-[2px] sm:grid-cols-4 sm:px-6 sm:py-5"
                   style={{
                     backgroundColor: alpha(colorMap.coral100, 0.34),
                     borderColor: alpha(colorMap.coral, 0.28),
@@ -1048,15 +1072,15 @@ export default function PerlinContoursPage() {
                     [`${age}`, "年龄 / Age"],
                   ].map(([value, label], index) => (
                     <div
-                      className={index ? "border-l" : ""}
+                      className={`${index % 2 !== 0 ? "border-l" : ""} ${index >= 2 ? "border-t max-sm:pt-2 sm:border-t-0" : ""}`}
                       key={label}
                       style={{ borderColor: alpha(colorMap.coral, 0.22) }}
                     >
-                      <div className="break-words px-2 text-[clamp(0.82rem,1.08vw,1.35rem)] leading-tight tracking-[0.04em]">
+                      <div className="break-words px-1 text-[clamp(0.72rem,1.08vw,1.35rem)] leading-tight tracking-[0.04em] sm:px-2">
                         {value}
                       </div>
                       <div
-                        className="mt-3 text-xs uppercase tracking-[0.2em]"
+                        className="mt-2 text-[10px] uppercase tracking-[0.2em] sm:mt-3 sm:text-xs"
                         style={{ color: colorMap.ink700 }}
                       >
                         {label}
@@ -1067,13 +1091,14 @@ export default function PerlinContoursPage() {
               </div>
             </section>
 
-            <section className="perlin-center-panel h-full min-h-0 snap-start py-16">
-              <WritingIndexSection />
+            <section className="perlin-center-panel flex h-full min-h-0 snap-start flex-col overflow-hidden py-4 sm:py-16">
+              <WritingIndexSection className="min-h-0 flex-1" />
             </section>
 
-            <section className="perlin-center-panel flex h-full min-h-0 snap-start items-center justify-center py-16">
+            <section className="perlin-center-panel hidden h-full min-h-0 snap-start items-center justify-center py-4 sm:py-16 lg:flex">
+              {/* Desktop: original layout */}
               <div
-                className="relative grid h-[min(88vh,900px)] w-full max-w-[min(94vw,1440px)] place-items-center border p-3 shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px]"
+                className="relative hidden h-[min(88vh,900px)] w-full max-w-[min(94vw,1440px)] place-items-center border p-3 shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px] sm:grid"
                 style={{
                   backgroundColor: alpha(colorMap.coral100, 0.3),
                   borderColor: alpha(colorMap.coral, 0.28),
@@ -1096,6 +1121,30 @@ export default function PerlinContoursPage() {
                   <AboutDepthScanFrame isReducedMotion={Boolean(isReducedMotion)} />
                 </div>
               </div>
+
+              {/* Mobile: hidden */}
+              {/* <div
+                className="relative grid h-[62vw] w-screen place-items-center overflow-hidden border shadow-[0_28px_90px_rgba(101,72,26,0.12)] backdrop-blur-[2px] lg:hidden"
+                style={{
+                  backgroundColor: alpha(colorMap.coral100, 0.3),
+                  borderColor: alpha(colorMap.coral, 0.28),
+                }}
+              >
+                <div
+                  className="h-[100vw] w-[62vw]"
+                  style={{ transform: "rotate(90deg)" }}
+                >
+                  <div
+                    className="relative grid h-full w-full place-items-center overflow-hidden border"
+                    style={{
+                      backgroundColor: alpha(colorMap.coral100, 0.2),
+                      borderColor: alpha(colorMap.coral, 0.16),
+                    }}
+                  >
+                    <AboutDepthScanFrame isReducedMotion={Boolean(isReducedMotion)} fit={true} />
+                  </div>
+                </div>
+              </div> */}
             </section>
           </div>
 
