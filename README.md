@@ -108,20 +108,37 @@ Also deployed to Cloudflare Pages for faster access from China. See `.github/wor
 
 ## 写文章 / Writing Posts
 
-新增文章时：
+新增文章只需要在 `content/posts/` 新建一个 `.md` 文件。首页 Notes 列表、右侧 Recent Articles 和文章详情页都会自动读取这里的 Markdown，不需要再维护 JS 索引。
 
-To add a post:
+To add a post, create one `.md` file under `content/posts/`. The home Notes list, right-side Recent Articles, and writing detail pages all read from Markdown automatically. No JS index update is needed.
 
-1. 在 `content/posts` 新增一个 `.md` 文件。
-   Add a `.md` file under `content/posts`.
-2. 在 `src/features/writing/postIndex.js` 里添加文章索引信息。
-   Add its index metadata in `src/features/writing/postIndex.js`.
-3. 重新构建并部署。
-   Rebuild and deploy.
+必填 frontmatter：
 
-文章 frontmatter 示例：
+- `title`
+- `slug`
+- `category`
+- `date`
+- `excerpt`
 
-Example frontmatter:
+可选 frontmatter：
+
+- `tags`：用英文逗号分隔，例如 `tags: motion, shader, notes`
+
+访问路径：
+
+- `/writing/<slug>`
+
+当前正文支持的 Markdown 子集：
+
+- 段落
+- `##` 二级标题
+- `###` 三级标题
+- `-` 列表
+- `>` 引用
+
+文章示例：
+
+Example post:
 
 ```md
 ---
@@ -132,6 +149,15 @@ date: 2026-06-04
 excerpt: 一个中文博客文章示例。
 tags: 中文, markdown, 写作
 ---
+
+## 动机
+
+这里写正文段落。
+
+- 支持列表
+- 支持基础排版
+
+> 也支持引用块。
 ```
 
 ## 说明 / Notes

@@ -4,10 +4,6 @@ import { alpha } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TransitionLink from "@/components/TransitionLink";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
-import {
-  getSortedWritingPosts,
-  getWritingTags,
-} from "@/features/writing/postIndex";
 
 const POSTS_PER_PAGE = 8;
 
@@ -96,46 +92,6 @@ function ArticleThumb({ colorMap, index }) {
   );
 }
 
-const FALLBACK_TOPICS = [
-  "All",
-  "Design",
-  "Motion",
-  "Code",
-  "Notes",
-  "UI/UX",
-  "Life",
-  "Process",
-  "Systems",
-  "Product",
-  "Interaction",
-  "Tools",
-  "Research",
-  "Maps",
-  "Data",
-  "Visuals",
-  "Markdown",
-  "Writing",
-  "Log",
-  "Reflection",
-  "Inspiration",
-  "Dev",
-  "Performance",
-  "AI",
-  "Web",
-  "Creativity",
-  "Workflow",
-  "Books",
-  "Ideas",
-  "Prototype",
-  "Learning",
-  "Case Study",
-  "Experiment",
-  "Build",
-  "Culture",
-  "Minimal",
-  "Other",
-];
-
 function normalizeTagLabel(tag) {
   if (tag === "all") {
     return "All";
@@ -148,8 +104,14 @@ function normalizeTagLabel(tag) {
     .join(" ");
 }
 
-function getReadMinutes(index) {
-  return [6, 5, 4, 7, 5, 3][index % 6];
+function getTagsFromPosts(posts) {
+  return [
+    ...new Set(
+      posts.flatMap((post) =>
+        Array.isArray(post.tags) ? post.tags.filter(Boolean) : [],
+      ),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
 }
 
 function LoadMoreTrigger({ onLoadMore, hasMore }) {
@@ -262,12 +224,12 @@ function MobileTagDropdown({ topics, activeTags, onToggleTag, colorMap }) {
   );
 }
 
-function WritingIndexSection({ className = "" }) {
+function WritingIndexSection({ className = "", posts = [] }) {
   const { colorMap } = useProjectTheme();
-  const allPosts = useMemo(() => getSortedWritingPosts(), []);
-  const allTags = useMemo(() => getWritingTags(), []);
+  const allPosts = useMemo(() => posts, [posts]);
+  const allTags = useMemo(() => getTagsFromPosts(allPosts), [allPosts]);
   const topics = useMemo(() => {
-    const merged = ["All", ...allTags.map(normalizeTagLabel), ...FALLBACK_TOPICS];
+    const merged = ["All", ...allTags.map(normalizeTagLabel)];
     return [...new Set(merged)];
   }, [allTags]);
   const [activeTags, setActiveTags] = useState([]);
@@ -278,7 +240,7 @@ function WritingIndexSection({ className = "" }) {
       return allPosts;
     }
     return allPosts.filter((post) =>
-      post.tags.some((tag) => {
+      (Array.isArray(post.tags) ? post.tags : []).some((tag) => {
         const normalized = normalizeTagLabel(tag).toLowerCase();
         return activeTags.some((t) => t.toLowerCase() === normalized);
       }),
@@ -392,8 +354,6 @@ function WritingIndexSection({ className = "" }) {
                 </div>
                 <div className="flex items-center gap-5 text-xs tracking-[0.12em]" style={{ color: colorMap.ink600 }}>
                   <span>{post.date}</span>
-                  <span className="h-3 w-px" style={{ backgroundColor: alpha(colorMap.coral, 0.28) }} />
-                  <span>{getReadMinutes(index)} min read</span>
                   <span className="grid h-10 w-10 place-items-center border text-xl transition group-hover:translate-x-1" style={{ borderColor: alpha(colorMap.coral, 0.32), color: colorMap.coral }}>
                     →
                   </span>
@@ -438,8 +398,6 @@ function WritingIndexSection({ className = "" }) {
                   </p>
                   <div className="mt-2 flex items-center gap-3 text-[10px] tracking-[0.12em]" style={{ color: colorMap.ink600 }}>
                     <span>{post.date}</span>
-                    <span className="h-3 w-px" style={{ backgroundColor: alpha(colorMap.coral, 0.28) }} />
-                    <span>{getReadMinutes(index)} min</span>
                   </div>
                 </div>
                 <span className="grid h-7 w-7 shrink-0 place-items-center border text-sm transition group-hover:translate-x-1" style={{ borderColor: alpha(colorMap.coral, 0.32), color: colorMap.coral }}>

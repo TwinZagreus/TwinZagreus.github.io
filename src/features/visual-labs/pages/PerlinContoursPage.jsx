@@ -1052,7 +1052,7 @@ export const ContourCanvas = memo(function ContourCanvas({
   );
 });
 
-export default function PerlinContoursPage() {
+export default function PerlinContoursPage({ posts = [] }) {
   const isReducedMotion = useReducedMotion();
   const { colorMap } = useProjectTheme();
   const pagePerformanceProfile = useContourPerformanceProfile(
@@ -1153,8 +1153,8 @@ export default function PerlinContoursPage() {
           }}
         />
 
-        <div className="relative z-20 grid h-full grid-cols-[minmax(150px,0.42fr)_minmax(520px,1.25fr)_minmax(240px,0.46fr)] grid-rows-[auto_1fr] gap-x-8 gap-y-6 max-lg:grid-cols-1 max-lg:gap-y-3">
-          <header className="relative col-span-3 grid grid-cols-[1fr_auto_1fr] items-center max-lg:col-span-1">
+        <div className="relative z-20 grid h-full grid-cols-1 grid-rows-[auto_1fr] gap-x-8 gap-y-6 max-lg:gap-y-3 min-[1500px]:grid-cols-[minmax(150px,0.42fr)_minmax(520px,1.25fr)_minmax(240px,0.46fr)]">
+          <header className="relative col-span-1 grid grid-cols-[1fr_auto_1fr] items-center min-[1500px]:col-span-3">
             <div
               className="flex items-center gap-5 text-xs uppercase tracking-[0.32em]"
               style={{ color: colorMap.ink800 }}
@@ -1289,7 +1289,7 @@ export default function PerlinContoursPage() {
             </section>
 
             <section className="perlin-center-panel flex h-full min-h-0 snap-start flex-col overflow-hidden py-4 sm:py-16">
-              <WritingIndexSection className="min-h-0 flex-1" />
+              <WritingIndexSection className="min-h-0 flex-1" posts={posts} />
             </section>
 
             <section className="perlin-center-panel hidden h-full min-h-0 snap-start items-center justify-center py-4 sm:py-16 lg:flex">
@@ -1350,7 +1350,7 @@ export default function PerlinContoursPage() {
             </section>
           </div>
 
-          <HomeRightRail />
+          <HomeRightRail recentPosts={posts} />
         </div>
       </section>
     </main>

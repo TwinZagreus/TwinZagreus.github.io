@@ -29,5 +29,7 @@ export default function Page({ params }) {
     notFound();
   }
 
-  return <WritingArticlePage post={post} />;
+  const recentPosts = allPosts.filter((item) => item.slug !== post.slug);
+
+  return <WritingArticlePage post={post} recentPosts={recentPosts} />;
 }

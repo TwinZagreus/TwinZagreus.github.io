@@ -28,6 +28,21 @@ function parseFrontmatter(source) {
   return { content: match[2].trim(), meta };
 }
 
+function normalizeTags(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export function getAllPosts() {
   return fs
     .readdirSync(POSTS_DIR)
@@ -41,7 +56,7 @@ export function getAllPosts() {
         date: meta.date,
         excerpt: meta.excerpt,
         slug: meta.slug ?? fileName.replace(/\.md$/, ""),
-        tags: Array.isArray(meta.tags) ? meta.tags : [],
+        tags: normalizeTags(meta.tags),
         title: meta.title,
       };
     })

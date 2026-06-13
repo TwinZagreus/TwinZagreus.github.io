@@ -7,7 +7,6 @@ import LyricsPanel from "@/components/LyricsPanel";
 import TransitionLink from "@/components/TransitionLink";
 import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
-import { getRecentWritingPosts } from "@/features/writing/postIndex";
 import {
   CONTOUR_PERFORMANCE_CHANGE_EVENT,
   shouldUseStaticContourPerformanceMode,
@@ -174,7 +173,7 @@ export function HomeLeftRail({ className = "" }) {
   const { colorMap } = useProjectTheme();
 
   return (
-    <aside className={`hidden min-h-0 flex-col justify-between pb-7 pt-20 lg:flex ${className}`}>
+    <aside className={`hidden min-h-0 flex-col justify-between pb-7 pt-20 min-[1500px]:flex ${className}`}>
       <LiveLocationTime colorMap={colorMap} />
       <div>
         <div
@@ -209,12 +208,12 @@ export function HomeRightRail({ className = "", recentPosts }) {
   } = useAudioPlayer();
   const { colorMap } = useProjectTheme();
   const resolvedRecentPosts = useMemo(
-    () => recentPosts ?? getRecentWritingPosts(4),
+    () => (recentPosts ?? []).slice(0, 4),
     [recentPosts],
   );
 
   return (
-    <aside className={`hidden min-h-0 flex-col justify-center lg:flex ${className}`}>
+    <aside className={`hidden min-h-0 flex-col justify-center min-[1500px]:flex ${className}`}>
       <div
         className="self-end text-3xl leading-none"
         style={{ color: colorMap.coral }}
@@ -272,7 +271,7 @@ export function HomeRightRail({ className = "", recentPosts }) {
                         className="mt-3 text-xs tracking-[0.16em]"
                         style={{ color: colorMap.ink600 }}
                       >
-                        {post.date} / 6 min read
+                        {post.date}
                       </p>
                     </div>
                   </div>
