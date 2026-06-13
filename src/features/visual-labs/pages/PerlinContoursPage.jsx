@@ -9,26 +9,58 @@ import { HomeLeftRail, HomeRightRail } from "@/components/HomeSideRails";
 import SocialLinks from "@/components/SocialLinks";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import WritingIndexSection from "@/features/writing/WritingIndexSection";
+import {
+  CONTOUR_PERFORMANCE_CHANGE_EVENT,
+  CONTOUR_PERFORMANCE_MODE_AUTO,
+  getStoredContourPerformanceMode,
+} from "@/lib/contourPerformance";
 import { PROJECT_COLOR_MAP } from "@/lib/theme";
 
 const CENTER_SECTION_COUNT = 3;
-const CONTOUR_PERFORMANCE_STORAGE_KEY = "project-contour-performance";
 const CONTOUR_RENDER_PROFILES = Object.freeze({
   balanced: {
+    mode: "webgl",
+    name: "balanced",
     dprCap: 1,
   },
   lowPower: {
-    deviceMemoryThreshold: 4,
+    mode: "webgl",
+    name: "lowPower",
     dprCap: 0.82,
   },
   reduced: {
-    dprCap: 0.72,
+    mode: "static",
+    name: "reduced",
+    dprCap: 0,
+  },
+  static: {
+    mode: "static",
+    name: "static",
+    dprCap: 0,
   },
 });
+const LOW_POWER_DEVICE_MEMORY_THRESHOLD = 4;
+const LOW_POWER_HARDWARE_CONCURRENCY_THRESHOLD = 4;
 const ABOUT_IMAGE = "/img/about-01.webp";
 const ABOUT_DEPTH_IMAGE = "/img/about-01-depth.webp";
 const ABOUT_IMAGE_WIDTH = 2160;
 const ABOUT_IMAGE_HEIGHT = 1212;
+const STATIC_CONTOUR_PATHS = Object.freeze([
+  "M-82 78C30 20 92 124 186 72C294 12 340 118 452 60C568 0 612 114 724 62C840 8 918 88 1284 8",
+  "M-72 152C44 98 108 188 216 132C330 74 392 178 502 122C620 62 692 156 806 104C918 54 1002 138 1280 70",
+  "M-64 226C56 178 128 264 236 204C344 144 418 236 528 184C650 126 728 214 840 162C956 108 1040 190 1268 128",
+  "M-72 302C42 248 122 346 238 286C350 230 430 316 546 262C670 204 744 292 866 236C990 180 1072 260 1280 202",
+  "M-86 382C34 320 124 420 244 358C366 296 452 398 570 334C690 270 784 362 904 304C1028 244 1098 332 1284 270",
+  "M-76 468C42 402 128 512 250 446C374 382 468 486 590 420C712 356 810 448 930 386C1040 330 1118 420 1282 356",
+  "M-92 560C28 488 128 608 250 534C374 462 470 576 596 500C716 430 810 530 934 460C1056 390 1128 486 1278 424",
+  "M-76 650C38 574 126 700 250 622C374 546 468 668 594 588C722 510 812 620 936 548C1058 478 1136 570 1286 512",
+  "M120 -74C64 30 170 92 112 202C54 314 166 384 106 498C46 610 158 678 110 874",
+  "M244 -86C184 28 304 104 242 218C180 336 306 406 244 528C186 646 304 716 252 884",
+  "M414 -74C346 38 470 114 408 230C342 354 474 428 408 552C346 672 468 738 416 880",
+  "M628 -82C552 36 690 112 622 236C552 362 694 440 626 570C562 690 690 748 640 878",
+  "M832 -70C754 38 892 122 826 244C758 372 896 454 830 578C766 700 892 754 842 882",
+  "M1060 -88C982 28 1124 110 1058 238C992 366 1136 442 1068 570C1006 690 1130 754 1084 884",
+]);
 
 function getDevicePixelRatio() {
   if (typeof window === "undefined") {
@@ -39,31 +71,13 @@ function getDevicePixelRatio() {
 }
 
 function getStoredContourFrameProfileName() {
-  if (typeof window === "undefined") {
-    return "";
-  }
+  const storedMode = getStoredContourPerformanceMode();
 
-  try {
-    const storedProfile = window.localStorage.getItem(
-      CONTOUR_PERFORMANCE_STORAGE_KEY,
-    );
+  return storedMode === CONTOUR_PERFORMANCE_MODE_AUTO ? "" : storedMode;
+}
 
-    if (storedProfile === "balanced") {
-      return "balanced";
-    }
-
-    if (
-      storedProfile === "low" ||
-      storedProfile === "low-power" ||
-      storedProfile === "lowPower"
-    ) {
-      return "lowPower";
-    }
-  } catch {
-    return "";
-  }
-
-  return "";
+function isStaticContourProfile(profile) {
+  return profile?.mode === "static";
 }
 
 function isSoftwareRenderer(rendererName = "") {
@@ -76,7 +90,66 @@ function isLikelyLowPowerRenderer(rendererName = "") {
   );
 }
 
-function getContourFrameProfile(isReducedMotion, hasLowPowerGpu = false) {
+function getGpuRendererName() {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  try {
+    const canvas = document.createElement("canvas");
+    const context =
+      canvas.getContext("webgl2", { powerPreference: "low-power" }) ||
+      canvas.getContext("webgl", { powerPreference: "low-power" }) ||
+      canvas.getContext("experimental-webgl", { powerPreference: "low-power" });
+
+    if (!context) {
+      return "software renderer unavailable";
+    }
+
+    const debugInfo = context.getExtension("WEBGL_debug_renderer_info");
+    const rendererName = debugInfo
+      ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+      : context.getParameter(context.RENDERER);
+
+    context.getExtension("WEBGL_lose_context")?.loseContext();
+    return String(rendererName ?? "");
+  } catch {
+    return "";
+  }
+}
+
+function shouldPreferStaticContourProfile() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const connection = window.navigator.connection;
+  const prefersReducedData =
+    connection?.saveData ||
+    window.matchMedia?.("(prefers-reduced-data: reduce)")?.matches;
+
+  return Boolean(prefersReducedData);
+}
+
+function shouldPreferLowPowerContourProfile() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const deviceMemory = window.navigator.deviceMemory ?? Infinity;
+  const hardwareConcurrency = window.navigator.hardwareConcurrency ?? Infinity;
+
+  return Boolean(
+    deviceMemory <= LOW_POWER_DEVICE_MEMORY_THRESHOLD ||
+      hardwareConcurrency <= LOW_POWER_HARDWARE_CONCURRENCY_THRESHOLD,
+  );
+}
+
+function getContourFrameProfile(
+  isReducedMotion,
+  hasLowPowerGpu = false,
+  isGpuProbePending = false,
+) {
   if (isReducedMotion) {
     return CONTOUR_RENDER_PROFILES.reduced;
   }
@@ -90,18 +163,14 @@ function getContourFrameProfile(isReducedMotion, hasLowPowerGpu = false) {
     return CONTOUR_RENDER_PROFILES[storedProfileName];
   }
 
-  const deviceMemory = window.navigator.deviceMemory ?? Infinity;
-  const hardwareConcurrency = window.navigator.hardwareConcurrency ?? Infinity;
-  const connection = window.navigator.connection;
-  const prefersReducedData =
-    connection?.saveData ||
-    window.matchMedia?.("(prefers-reduced-data: reduce)")?.matches;
+  if (shouldPreferStaticContourProfile()) {
+    return CONTOUR_RENDER_PROFILES.static;
+  }
 
   if (
     hasLowPowerGpu ||
-    prefersReducedData ||
-    deviceMemory <= CONTOUR_RENDER_PROFILES.lowPower.deviceMemoryThreshold ||
-    hardwareConcurrency <= 4
+    isGpuProbePending ||
+    shouldPreferLowPowerContourProfile()
   ) {
     return CONTOUR_RENDER_PROFILES.lowPower;
   }
@@ -109,11 +178,27 @@ function getContourFrameProfile(isReducedMotion, hasLowPowerGpu = false) {
   return CONTOUR_RENDER_PROFILES.balanced;
 }
 
-function useContourPerformanceProfile(isReducedMotion, hasLowPowerGpu) {
+function useContourPerformanceProfile(isReducedMotion, hasLowPowerGpu = false) {
+  const [performancePreferenceTick, setPerformancePreferenceTick] = useState(0);
+  const [hasDetectedLowPowerGpu, setHasDetectedLowPowerGpu] = useState(
+    hasLowPowerGpu,
+  );
+  const [isGpuProbePending, setIsGpuProbePending] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return Boolean(
+      !isReducedMotion &&
+        !getStoredContourFrameProfileName() &&
+        !shouldPreferStaticContourProfile(),
+    );
+  });
   const [profile, setProfile] = useState(() => {
     const frameProfile = getContourFrameProfile(
       isReducedMotion,
       hasLowPowerGpu,
+      isGpuProbePending,
     );
 
     return {
@@ -126,7 +211,8 @@ function useContourPerformanceProfile(isReducedMotion, hasLowPowerGpu) {
     const updateProfile = () => {
       const frameProfile = getContourFrameProfile(
         isReducedMotion,
-        hasLowPowerGpu,
+        hasDetectedLowPowerGpu || hasLowPowerGpu,
+        isGpuProbePending,
       );
 
       setProfile({
@@ -139,14 +225,58 @@ function useContourPerformanceProfile(isReducedMotion, hasLowPowerGpu) {
     const reducedDataQuery = window.matchMedia?.(
       "(prefers-reduced-data: reduce)",
     );
+    const handlePerformancePreferenceChange = () => {
+      setPerformancePreferenceTick((current) => current + 1);
+      updateProfile();
+    };
     reducedDataQuery?.addEventListener?.("change", updateProfile);
+    window.addEventListener(
+      CONTOUR_PERFORMANCE_CHANGE_EVENT,
+      handlePerformancePreferenceChange,
+    );
     window.addEventListener("resize", updateProfile);
 
     return () => {
       reducedDataQuery?.removeEventListener?.("change", updateProfile);
+      window.removeEventListener(
+        CONTOUR_PERFORMANCE_CHANGE_EVENT,
+        handlePerformancePreferenceChange,
+      );
       window.removeEventListener("resize", updateProfile);
     };
-  }, [hasLowPowerGpu, isReducedMotion]);
+  }, [
+    hasDetectedLowPowerGpu,
+    hasLowPowerGpu,
+    isGpuProbePending,
+    isReducedMotion,
+    performancePreferenceTick,
+  ]);
+
+  useEffect(() => {
+    if (
+      isReducedMotion ||
+      getStoredContourFrameProfileName() ||
+      shouldPreferStaticContourProfile()
+    ) {
+      setIsGpuProbePending(false);
+      setHasDetectedLowPowerGpu(false);
+      return;
+    }
+
+    setIsGpuProbePending(true);
+    const frameId = window.requestAnimationFrame(() => {
+      const rendererName = getGpuRendererName();
+      setHasDetectedLowPowerGpu(
+        isSoftwareRenderer(rendererName) ||
+          isLikelyLowPowerRenderer(rendererName),
+      );
+      setIsGpuProbePending(false);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [isReducedMotion, performancePreferenceTick]);
 
   return profile;
 }
@@ -214,6 +344,68 @@ function HomePortraitFrame({ imageUrl, isReducedMotion }) {
         ))}
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+function StaticContourBackdrop({ controls }) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none relative h-screen h-[100dvh] overflow-hidden"
+      style={{ backgroundColor: controls.backgroundColor }}
+    >
+      <svg
+        className="absolute inset-0 h-full w-full"
+        fill="none"
+        preserveAspectRatio="none"
+        viewBox="0 0 1200 800"
+      >
+        <rect fill={controls.backgroundColor} height="800" width="1200" />
+        <g opacity="0.72">
+          {STATIC_CONTOUR_PATHS.map((path, index) => (
+            <path
+              d={path}
+              key={`static-contour-primary-${index}`}
+              stroke={alpha(controls.lineColor, index % 4 === 0 ? 0.34 : 0.22)}
+              strokeLinecap="round"
+              strokeWidth={index % 4 === 0 ? 1.2 : 0.82}
+            />
+          ))}
+        </g>
+        <g opacity="0.5">
+          {STATIC_CONTOUR_PATHS.slice(0, 8).map((path, index) => (
+            <path
+              d={path}
+              key={`static-contour-offset-${index}`}
+              stroke={alpha(controls.lineColor, index % 3 === 0 ? 0.26 : 0.16)}
+              strokeLinecap="round"
+              strokeWidth={index % 3 === 0 ? 0.92 : 0.68}
+              transform={`translate(${index % 2 === 0 ? 38 : -46} ${42 + index * 9}) scale(1.03 0.98)`}
+            />
+          ))}
+        </g>
+        <g opacity="0.36">
+          {[0, 1, 2, 3, 4].map((index) => (
+            <circle
+              cx={210 + index * 190}
+              cy={120 + (index % 2) * 280}
+              key={`static-contour-radar-${index}`}
+              r={32 + index * 9}
+              stroke={alpha(controls.lineColor, 0.18)}
+              strokeWidth="0.8"
+            />
+          ))}
+        </g>
+      </svg>
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            `radial-gradient(circle at 50% 42%, ${alpha(controls.backgroundColor, 0.1)} 0%, transparent 46%), ` +
+            `linear-gradient(180deg, ${alpha(controls.backgroundColor, 0.04)} 0%, ${alpha(controls.lineColor, 0.05)} 100%)`,
+        }}
+      />
+    </div>
   );
 }
 
@@ -802,6 +994,7 @@ function ContourGpuProfileProbe({ onSoftwareRendererDetected, onLowPowerGpuDetec
 export const ContourCanvas = memo(function ContourCanvas({
   controlsRef,
   isReducedMotion,
+  staticControls,
 }) {
   const canvasHostRef = useRef(null);
   const [isSoftwareRendering, setIsSoftwareRendering] = useState(false);
@@ -823,8 +1016,8 @@ export const ContourCanvas = memo(function ContourCanvas({
     setEventSource(canvasHostRef.current);
   }, []);
 
-  if (isSoftwareRendering) {
-    return null;
+  if (isSoftwareRendering || isStaticContourProfile(performanceProfile)) {
+    return <StaticContourBackdrop controls={staticControls ?? controlsRef.current} />;
   }
 
   return (
@@ -862,6 +1055,10 @@ export const ContourCanvas = memo(function ContourCanvas({
 export default function PerlinContoursPage() {
   const isReducedMotion = useReducedMotion();
   const { colorMap } = useProjectTheme();
+  const pagePerformanceProfile = useContourPerformanceProfile(
+    Boolean(isReducedMotion),
+  );
+  const useStaticVisuals = isStaticContourProfile(pagePerformanceProfile);
   const centerScrollRef = useRef(null);
   const age = useMemo(() => new Date().getFullYear() - 1998, []);
   const [activeCenterSection, setActiveCenterSection] = useState(0);
@@ -1118,7 +1315,9 @@ export default function PerlinContoursPage() {
                     borderColor: alpha(colorMap.coral, 0.16),
                   }}
                 >
-                  <AboutDepthScanFrame isReducedMotion={Boolean(isReducedMotion)} />
+                  <AboutDepthScanFrame
+                    isReducedMotion={Boolean(isReducedMotion) || useStaticVisuals}
+                  />
                 </div>
               </div>
 
@@ -1141,7 +1340,10 @@ export default function PerlinContoursPage() {
                       borderColor: alpha(colorMap.coral, 0.16),
                     }}
                   >
-                    <AboutDepthScanFrame isReducedMotion={Boolean(isReducedMotion)} fit={true} />
+                    <AboutDepthScanFrame
+                      fit={true}
+                      isReducedMotion={Boolean(isReducedMotion) || useStaticVisuals}
+                    />
                   </div>
                 </div>
               </div> */}

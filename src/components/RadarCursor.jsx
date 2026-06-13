@@ -1,7 +1,12 @@
 "use client";
 
+import { useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
+import {
+  CONTOUR_PERFORMANCE_CHANGE_EVENT,
+  shouldUseStaticContourPerformanceMode,
+} from "@/lib/contourPerformance";
 
 const SCAN_DURATION_MS = 680;
 const BLIP_DURATION_MS = 1100;
@@ -14,8 +19,41 @@ function supportsFinePointer() {
   return window.matchMedia?.("(pointer: fine)").matches ?? false;
 }
 
+function isSoftwareRendererName(rendererName = "") {
+  return /microsoft basic|swiftshader|llvmpipe/i.test(rendererName);
+}
+
+function getCursorGpuRendererName() {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  try {
+    const canvas = document.createElement("canvas");
+    const context =
+      canvas.getContext("webgl2", { powerPreference: "low-power" }) ||
+      canvas.getContext("webgl", { powerPreference: "low-power" }) ||
+      canvas.getContext("experimental-webgl", { powerPreference: "low-power" });
+
+    if (!context) {
+      return "software renderer unavailable";
+    }
+
+    const debugInfo = context.getExtension("WEBGL_debug_renderer_info");
+    const rendererName = debugInfo
+      ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+      : context.getParameter(context.RENDERER);
+
+    context.getExtension("WEBGL_lose_context")?.loseContext();
+    return String(rendererName ?? "");
+  } catch {
+    return "";
+  }
+}
+
 export default function RadarCursor() {
   const { colorMap } = useProjectTheme();
+  const isReducedMotion = useReducedMotion();
   const cursorRef = useRef(null);
   const frameRef = useRef(null);
   const isVisibleRef = useRef(false);
@@ -24,13 +62,59 @@ export default function RadarCursor() {
   const positionRef = useRef({ currentX: 0, currentY: 0, targetX: 0, targetY: 0 });
   const startTimeRef = useRef(0);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [hasSoftwareRenderer, setHasSoftwareRenderer] = useState(false);
+  const [shouldUseDefaultCursor, setShouldUseDefaultCursor] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [blips, setBlips] = useState([]);
   const [scans, setScans] = useState([]);
 
   useEffect(() => {
+    const updatePerformanceCursorMode = () => {
+      setShouldUseDefaultCursor(shouldUseStaticContourPerformanceMode());
+    };
+
+    updatePerformanceCursorMode();
+    const reducedDataQuery = window.matchMedia?.(
+      "(prefers-reduced-data: reduce)",
+    );
+    reducedDataQuery?.addEventListener?.("change", updatePerformanceCursorMode);
+    window.addEventListener(
+      CONTOUR_PERFORMANCE_CHANGE_EVENT,
+      updatePerformanceCursorMode,
+    );
+
+    return () => {
+      reducedDataQuery?.removeEventListener?.(
+        "change",
+        updatePerformanceCursorMode,
+      );
+      window.removeEventListener(
+        CONTOUR_PERFORMANCE_CHANGE_EVENT,
+        updatePerformanceCursorMode,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setHasSoftwareRenderer(
+        isSoftwareRendererName(getCursorGpuRendererName()),
+      );
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
+  useEffect(() => {
     const updateEnabled = () => {
-      setIsEnabled(supportsFinePointer());
+      setIsEnabled(
+        supportsFinePointer() &&
+          !isReducedMotion &&
+          !shouldUseDefaultCursor &&
+          !hasSoftwareRenderer,
+      );
     };
 
     updateEnabled();
@@ -40,11 +124,15 @@ export default function RadarCursor() {
     return () => {
       mediaQuery?.removeEventListener?.("change", updateEnabled);
     };
-  }, []);
+  }, [hasSoftwareRenderer, isReducedMotion, shouldUseDefaultCursor]);
 
   useEffect(() => {
     if (!isEnabled) {
       document.documentElement.classList.remove("radar-cursor-enabled");
+      isVisibleRef.current = false;
+      setBlips([]);
+      setScans([]);
+      setIsVisible(false);
       return undefined;
     }
 

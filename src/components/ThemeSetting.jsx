@@ -1,10 +1,15 @@
 "use client";
 
 import { alpha } from "@mui/material/styles";
+import { useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BASE_COLOR_LIST, MAIN_BACKGROUND_COLOR } from "@/lib/theme";
 import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
+import {
+  CONTOUR_PERFORMANCE_CHANGE_EVENT,
+  shouldUseStaticContourPerformanceMode,
+} from "@/lib/contourPerformance";
 import CircularKnob from "./CircularKnob";
 import PlayPauseMorphIcon from "./PlayPauseMorphIcon";
 
@@ -15,7 +20,40 @@ function makeSvgDataUrl(svgText) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
 }
 
-function useTintedTwinIcon(accentColor) {
+function disableLiquidSvgAnimation(svgText) {
+  return svgText
+    .replace(/animation:\s*liquid-flow[^;]*;/g, "animation: none;")
+    .replace(/will-change:\s*stroke-dashoffset;\s*/g, "");
+}
+
+function useStaticPerformanceMode() {
+  const [isStaticPerformanceMode, setIsStaticPerformanceMode] = useState(false);
+
+  useEffect(() => {
+    const updatePerformanceMode = () => {
+      setIsStaticPerformanceMode(shouldUseStaticContourPerformanceMode());
+    };
+
+    updatePerformanceMode();
+    const reducedDataQuery = window.matchMedia?.(
+      "(prefers-reduced-data: reduce)",
+    );
+    reducedDataQuery?.addEventListener?.("change", updatePerformanceMode);
+    window.addEventListener(CONTOUR_PERFORMANCE_CHANGE_EVENT, updatePerformanceMode);
+
+    return () => {
+      reducedDataQuery?.removeEventListener?.("change", updatePerformanceMode);
+      window.removeEventListener(
+        CONTOUR_PERFORMANCE_CHANGE_EVENT,
+        updatePerformanceMode,
+      );
+    };
+  }, []);
+
+  return isStaticPerformanceMode;
+}
+
+function useTintedTwinIcon(accentColor, disableAnimation) {
   const [svgText, setSvgText] = useState("");
 
   useEffect(() => {
@@ -44,10 +82,13 @@ function useTintedTwinIcon(accentColor) {
       return ICON_URL;
     }
 
-    const tintedSvg = svgText.replaceAll(ICON_ACCENT_COLOR, accentColor);
+    const resolvedSvg = disableAnimation
+      ? disableLiquidSvgAnimation(svgText)
+      : svgText;
+    const tintedSvg = resolvedSvg.replaceAll(ICON_ACCENT_COLOR, accentColor);
 
     return makeSvgDataUrl(tintedSvg);
-  }, [accentColor, svgText]);
+  }, [accentColor, disableAnimation, svgText]);
 }
 
 function LyricsToggleIcon({ color, isOpen }) {
@@ -115,6 +156,8 @@ function ChevronIcon({ color, isOpen }) {
 }
 
 export default function ThemeSetting() {
+  const isReducedMotion = useReducedMotion();
+  const isStaticPerformanceMode = useStaticPerformanceMode();
   const {
     beginSilentSeek,
     endSilentSeek,
@@ -135,7 +178,10 @@ export default function ThemeSetting() {
   const rotationValueRef = useRef(0);
   const settingIconRef = useRef(null);
   const rootRef = useRef(null);
-  const iconSrc = useTintedTwinIcon(themeOption.color);
+  const iconSrc = useTintedTwinIcon(
+    themeOption.color,
+    isReducedMotion || isStaticPerformanceMode,
+  );
   const controlButtonStyle = {
     backgroundColor: colorMap.coral100,
     borderColor: alpha(colorMap.ink950, 0.24),
@@ -144,7 +190,7 @@ export default function ThemeSetting() {
   };
 
   useEffect(() => {
-    if (!isPlaying) {
+    if (!isPlaying || isReducedMotion || isStaticPerformanceMode) {
       window.cancelAnimationFrame(rotationFrameRef.current);
       rotationPreviousTimeRef.current = 0;
       return undefined;
@@ -168,7 +214,7 @@ export default function ThemeSetting() {
       window.cancelAnimationFrame(rotationFrameRef.current);
       rotationPreviousTimeRef.current = 0;
     };
-  }, [isPlaying]);
+  }, [isPlaying, isReducedMotion, isStaticPerformanceMode]);
 
   useEffect(() => {
     if (!isOpen)

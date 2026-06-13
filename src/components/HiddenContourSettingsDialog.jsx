@@ -4,6 +4,12 @@ import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
+import {
+  CONTOUR_PERFORMANCE_CHANGE_EVENT,
+  CONTOUR_PERFORMANCE_MODE_AUTO,
+  getStoredContourPerformanceMode,
+  setStoredContourPerformanceMode,
+} from "@/lib/contourPerformance";
 import { MAIN_BACKGROUND_COLOR } from "@/lib/theme";
 
 const FIELD_OPTIONS = Object.freeze([
@@ -11,6 +17,34 @@ const FIELD_OPTIONS = Object.freeze([
   { key: "sharpness", label: "sharpness", step: "0.01" },
   { key: "curvature", label: "curvature", step: "0.01" },
   { key: "thickness", label: "thickness", step: "0.01" },
+]);
+const PERFORMANCE_MODE_OPTIONS = Object.freeze([
+  {
+    key: CONTOUR_PERFORMANCE_MODE_AUTO,
+    label: "AUTO",
+    trigger: "系统判断",
+    detail:
+      "Save-Data / reduced motion / software renderer -> STATIC; Intel HD/UHD/Iris / memory <= 4 / cores <= 4 -> LOW POWER.",
+  },
+  {
+    key: "balanced",
+    label: "BALANCED",
+    trigger: "手动强制",
+    detail: "动态 WebGL 背景，DPR cap 1，保留完整 Perlin 等高线动效。",
+  },
+  {
+    key: "lowPower",
+    label: "LOW POWER",
+    trigger: "低端核显自动",
+    detail: "动态 WebGL 背景，DPR cap 0.82，Intel HD/UHD/Iris 或低内存/低核心时自动使用。",
+  },
+  {
+    key: "static",
+    label: "STATIC",
+    trigger: "静态兜底",
+    detail:
+      "静态 SVG 等高线，不跑背景 WebGL，雷达鼠标退回系统默认。Save-Data、reduced motion 或软件渲染时自动使用。",
+  },
 ]);
 
 function makeDraftValues(controls) {
@@ -30,11 +64,29 @@ export default function HiddenContourSettingsDialog() {
   } = useProjectTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [draftValues, setDraftValues] = useState(() => makeDraftValues(contourControls));
+  const [performanceMode, setPerformanceMode] = useState(
+    CONTOUR_PERFORMANCE_MODE_AUTO,
+  );
   const dialogRef = useRef(null);
 
   useEffect(() => {
     setDraftValues(makeDraftValues(contourControls));
   }, [contourControls]);
+
+  useEffect(() => {
+    const syncPerformanceMode = () => {
+      setPerformanceMode(getStoredContourPerformanceMode());
+    };
+
+    syncPerformanceMode();
+    window.addEventListener(CONTOUR_PERFORMANCE_CHANGE_EVENT, syncPerformanceMode);
+    return () => {
+      window.removeEventListener(
+        CONTOUR_PERFORMANCE_CHANGE_EVENT,
+        syncPerformanceMode,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -97,6 +149,11 @@ export default function HiddenContourSettingsDialog() {
     setDraftValues(makeDraftValues(themeOption.contourControls));
   };
 
+  const handlePerformanceModeChange = (nextMode) => {
+    setPerformanceMode(nextMode);
+    setStoredContourPerformanceMode(nextMode);
+  };
+
   return (
     <AnimatePresence>
       {isOpen ? (
@@ -117,7 +174,7 @@ export default function HiddenContourSettingsDialog() {
           <motion.div
             aria-label="Contour settings"
             aria-modal="true"
-            className="w-full max-w-[420px] overflow-hidden rounded-[8px] border shadow-2xl"
+            className="w-full max-w-[620px] overflow-hidden rounded-[8px] border shadow-2xl"
             exit={{ opacity: 0, scale: 0.97, y: 18 }}
             initial={{ opacity: 0, scale: 0.97, y: 18 }}
             ref={dialogRef}
@@ -158,7 +215,98 @@ export default function HiddenContourSettingsDialog() {
               </button>
             </div>
 
-            <div className="grid gap-3 px-5 py-5">
+            <div className="grid gap-5 px-5 py-5">
+              <section
+                className="grid gap-3 border p-3"
+                style={{
+                  backgroundColor: alpha(MAIN_BACKGROUND_COLOR, 0.62),
+                  borderColor: alpha(themeOption.color, 0.22),
+                }}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: colorMap.ink700 }}>
+                      RENDER PROFILE
+                    </div>
+                    <div className="mt-1 text-[10px] uppercase tracking-[0.16em]" style={{ color: alpha(colorMap.ink950, 0.62) }}>
+                      Ctrl + Alt + P / local override
+                    </div>
+                  </div>
+                  <div
+                    className="h-2 w-2 rounded-full"
+                    style={{
+                      backgroundColor:
+                        performanceMode === CONTOUR_PERFORMANCE_MODE_AUTO
+                          ? alpha(colorMap.ink950, 0.28)
+                          : themeOption.color,
+                    }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {PERFORMANCE_MODE_OPTIONS.map((option, index) => {
+                    const isSelected = performanceMode === option.key;
+
+                    return (
+                      <motion.button
+                        aria-pressed={isSelected}
+                        className="min-h-[74px] rounded-[6px] border px-3 py-3 text-left transition duration-200 ease-out hover:scale-[1.015] active:scale-[0.98]"
+                        initial={{ opacity: 0, y: 8 }}
+                        key={option.key}
+                        animate={{ opacity: 1, y: 0 }}
+                        onClick={() => handlePerformanceModeChange(option.key)}
+                        style={{
+                          backgroundColor: isSelected
+                            ? alpha(themeOption.color, 0.16)
+                            : alpha(colorMap.coral100, 0.34),
+                          borderColor: isSelected
+                            ? themeOption.color
+                            : alpha(colorMap.ink950, 0.14),
+                          boxShadow: isSelected
+                            ? `inset 0 0 0 1px ${alpha(themeOption.color, 0.32)}`
+                            : "none",
+                          color: colorMap.ink950,
+                        }}
+                        transition={{ delay: index * 0.025, duration: 0.18, ease: "easeOut" }}
+                        type="button"
+                      >
+                        <span className="block text-[11px] font-bold uppercase tracking-[0.18em]">
+                          {option.label}
+                        </span>
+                        <span className="mt-2 block text-[10px] uppercase tracking-[0.12em]" style={{ color: colorMap.ink700 }}>
+                          {option.trigger}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid gap-2">
+                  {PERFORMANCE_MODE_OPTIONS.map((option) => {
+                    const isSelected = performanceMode === option.key;
+
+                    return (
+                      <div
+                        className="grid grid-cols-[72px_1fr] gap-3 border-t pt-2 text-[10px] leading-relaxed"
+                        key={`profile-copy-${option.key}`}
+                        style={{
+                          borderColor: alpha(colorMap.ink950, 0.1),
+                          color: isSelected ? colorMap.ink950 : colorMap.ink700,
+                        }}
+                      >
+                        <span
+                          className="font-bold uppercase tracking-[0.16em]"
+                          style={{ color: isSelected ? themeOption.color : colorMap.ink700 }}
+                        >
+                          {option.label}
+                        </span>
+                        <span>{option.detail}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
               {fieldRows.map((field, index) => (
                 <motion.label
                   className="grid grid-cols-[112px_1fr] items-center gap-3"

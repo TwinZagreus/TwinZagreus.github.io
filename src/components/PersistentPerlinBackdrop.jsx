@@ -42,6 +42,7 @@ export default function PersistentPerlinBackdrop() {
     () => makeDefaultControls(colorMap, contourControls),
     [colorMap, contourControls],
   );
+  const controlsSignature = `${themedControls.backgroundColor}-${themedControls.lineColor}`;
   const controlsRef = useRef(themedControls);
   const curvatureResetTimerRef = useRef(0);
   const isVisible = shouldShowBackdrop(pathname);
@@ -109,7 +110,12 @@ export default function PersistentPerlinBackdrop() {
           background: `linear-gradient(180deg, ${alpha(colorMap.coral100, 0.22)} 0%, ${alpha(colorMap.neutral100, 0.28)} 100%)`,
         }}
       />
-      <ContourCanvas controlsRef={controlsRef} isReducedMotion={Boolean(isReducedMotion)} />
+      <ContourCanvas
+        controlsRef={controlsRef}
+        controlsSignature={controlsSignature}
+        isReducedMotion={Boolean(isReducedMotion)}
+        staticControls={themedControls}
+      />
     </div>
   );
 }

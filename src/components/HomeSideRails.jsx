@@ -8,6 +8,10 @@ import TransitionLink from "@/components/TransitionLink";
 import { useAudioPlayer } from "@/context/AudioPlayerContext";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 import { getRecentWritingPosts } from "@/features/writing/postIndex";
+import {
+  CONTOUR_PERFORMANCE_CHANGE_EVENT,
+  shouldUseStaticContourPerformanceMode,
+} from "@/lib/contourPerformance";
 
 function formatCoordinate(value, positiveLabel, negativeLabel) {
   if (!Number.isFinite(value)) {
@@ -19,11 +23,34 @@ function formatCoordinate(value, positiveLabel, negativeLabel) {
 }
 
 function LiveLocationTime({ colorMap }) {
+  const isReducedMotion = useReducedMotion();
   const [now, setNow] = useState(() => new Date());
+  const [isStaticPerformanceMode, setIsStaticPerformanceMode] = useState(false);
   const [pointerCoordinates, setPointerCoordinates] = useState({
     latitude: 0,
     longitude: 0,
   });
+
+  useEffect(() => {
+    const updatePerformanceMode = () => {
+      setIsStaticPerformanceMode(shouldUseStaticContourPerformanceMode());
+    };
+
+    updatePerformanceMode();
+    const reducedDataQuery = window.matchMedia?.(
+      "(prefers-reduced-data: reduce)",
+    );
+    reducedDataQuery?.addEventListener?.("change", updatePerformanceMode);
+    window.addEventListener(CONTOUR_PERFORMANCE_CHANGE_EVENT, updatePerformanceMode);
+
+    return () => {
+      reducedDataQuery?.removeEventListener?.("change", updatePerformanceMode);
+      window.removeEventListener(
+        CONTOUR_PERFORMANCE_CHANGE_EVENT,
+        updatePerformanceMode,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -31,17 +58,41 @@ function LiveLocationTime({ colorMap }) {
   }, []);
 
   useEffect(() => {
+    if (isReducedMotion || isStaticPerformanceMode) {
+      return undefined;
+    }
+
+    let frameId = 0;
+    let nextCoordinates = null;
+
+    const flushCoordinates = () => {
+      frameId = 0;
+      if (nextCoordinates) {
+        setPointerCoordinates(nextCoordinates);
+        nextCoordinates = null;
+      }
+    };
+
     const updateFromPointer = (event) => {
       const width = Math.max(window.innerWidth, 1);
       const height = Math.max(window.innerHeight, 1);
       const longitude = (event.clientX / width) * 360 - 180;
       const latitude = 90 - (event.clientY / height) * 180;
-      setPointerCoordinates({ latitude, longitude });
+      nextCoordinates = { latitude, longitude };
+
+      if (!frameId) {
+        frameId = window.requestAnimationFrame(flushCoordinates);
+      }
     };
 
     window.addEventListener("pointermove", updateFromPointer, { passive: true });
-    return () => window.removeEventListener("pointermove", updateFromPointer);
-  }, []);
+    return () => {
+      window.removeEventListener("pointermove", updateFromPointer);
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [isReducedMotion, isStaticPerformanceMode]);
 
   const timeParts = useMemo(() => {
     const time = new Intl.DateTimeFormat("en-US", {
