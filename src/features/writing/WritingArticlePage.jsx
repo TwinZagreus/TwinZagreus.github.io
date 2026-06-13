@@ -1,13 +1,33 @@
-"use client";
+﻿"use client";
 
 import { alpha } from "@mui/material/styles";
 import { motion, useReducedMotion } from "framer-motion";
+import katex from "katex";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HomeLeftRail, HomeRightRail } from "@/components/HomeSideRails";
 import TransitionLink from "@/components/TransitionLink";
 import { useProjectTheme } from "@/context/ProjectThemeContext";
 
 const MAP_HERO_VARIANT_COUNT = 3;
+
+function getReadingPalette(colorMap) {
+  return {
+    accent: colorMap.coral,
+    accentLine: alpha(colorMap.coral, 0.34),
+    accentSoft: alpha(colorMap.coral200, 0.52),
+    codeWash: alpha(colorMap.ink950, 0.075),
+    line: alpha(colorMap.ink950, 0.16),
+    lineStrong: alpha(colorMap.ink950, 0.24),
+    muted: colorMap.ink800,
+    paper: alpha(colorMap.coral100, 0.92),
+    paperDense: alpha(colorMap.coral100, 0.98),
+    paperSoft: alpha(colorMap.coral200, 0.68),
+    quiet: colorMap.ink700,
+    text: colorMap.ink950,
+    textStrong: colorMap.ink950,
+    title: colorMap.ink950,
+  };
+}
 
 function formatDateLabel(value) {
   const date = new Date(value);
@@ -240,7 +260,7 @@ function MapTexture({ colorMap }) {
         aria-hidden="true"
         className="absolute inset-0 h-full w-full opacity-45"
         fill="none"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid slice"
         viewBox="0 0 100 100"
       >
         <path d="M-5 16C10 6 16 23 29 13C43 2 46 12 55 8C70 0 75 14 105 4" stroke={alpha(colorMap.ink950, 0.22)} strokeWidth="0.18" />
@@ -263,7 +283,7 @@ function ArticleMapArtwork({ colorMap, variant }) {
         aria-hidden="true"
         className="absolute inset-0 h-full w-full"
         fill="none"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid slice"
         viewBox="0 0 1000 236"
       >
         <path d="M-40 164C90 92 184 141 282 98C381 54 480 88 590 66C722 40 822 74 1040 18" stroke={alpha(colorMap.coral, 0.34)} strokeLinecap="round" strokeWidth="1.15" />
@@ -288,7 +308,7 @@ function ArticleMapArtwork({ colorMap, variant }) {
         aria-hidden="true"
         className="absolute inset-0 h-full w-full"
         fill="none"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid slice"
         viewBox="0 0 1000 236"
       >
         <path d="M-30 50C70 108 143 35 247 86C337 130 431 61 535 100C644 141 723 75 835 116C912 145 963 118 1030 87" stroke={alpha(colorMap.ink950, 0.18)} strokeLinecap="round" strokeWidth="0.95" />
@@ -310,7 +330,7 @@ function ArticleMapArtwork({ colorMap, variant }) {
       aria-hidden="true"
       className="absolute inset-0 h-full w-full"
       fill="none"
-      preserveAspectRatio="none"
+      preserveAspectRatio="xMidYMid slice"
       viewBox="0 0 1000 236"
     >
       <path d="M0 170C92 154 144 132 218 156C292 180 355 126 438 148C525 171 600 204 690 166C789 130 854 145 1000 102" stroke={alpha(colorMap.coral, 0.38)} strokeDasharray="4 9" strokeLinecap="round" strokeWidth="1.2" />
@@ -329,15 +349,17 @@ function ArticleMapArtwork({ colorMap, variant }) {
 }
 
 function ArticleMapHero({ colorMap, variant }) {
+  const reading = getReadingPalette(colorMap);
+
   return (
     <div
-      className="relative mt-8 h-[clamp(200px,22vw,268px)] overflow-hidden rounded-[4px] border"
+      className="relative mt-8 h-[clamp(250px,25vw,340px)] overflow-hidden rounded-[4px] border"
       style={{
         background:
-          `linear-gradient(180deg, ${alpha(colorMap.coral100, 0.66)}, ${alpha(colorMap.neutral100, 0.52)}), ` +
+          `linear-gradient(180deg, ${reading.paperSoft}, ${alpha(colorMap.neutral100, 0.42)}), ` +
           `repeating-linear-gradient(0deg, ${alpha(colorMap.ink950, 0.035)} 0 1px, transparent 1px 8px), ` +
           `repeating-linear-gradient(90deg, ${alpha(colorMap.ink950, 0.025)} 0 1px, transparent 1px 12px)`,
-        borderColor: alpha(colorMap.coral, 0.2),
+        borderColor: reading.line,
       }}
     >
       <MapTexture colorMap={colorMap} />
@@ -354,7 +376,57 @@ function sanitizeHref(href) {
   return value;
 }
 
+function LatexMath({ colorMap, displayMode = false, math }) {
+  const reading = getReadingPalette(colorMap);
+  const html = useMemo(() => {
+    try {
+      return katex.renderToString(math, {
+        displayMode,
+        output: "html",
+        strict: false,
+        throwOnError: false,
+        trust: false,
+      });
+    } catch {
+      return katex.renderToString(String.raw`\text{${math}}`, {
+        displayMode,
+        output: "html",
+        strict: false,
+        throwOnError: false,
+        trust: false,
+      });
+    }
+  }, [displayMode, math]);
+
+  if (displayMode) {
+    return (
+      <div
+        className="overflow-x-auto rounded-[4px] border px-5 py-4 text-center"
+        style={{
+          backgroundColor: reading.paperSoft,
+          borderColor: reading.line,
+          color: reading.textStrong,
+        }}
+      >
+        <span dangerouslySetInnerHTML={{ __html: html }} />
+      </div>
+    );
+  }
+
+  return (
+    <span
+      className="inline-block rounded-[3px] px-1"
+      dangerouslySetInnerHTML={{ __html: html }}
+      style={{
+        backgroundColor: reading.codeWash,
+        color: reading.textStrong,
+      }}
+    />
+  );
+}
+
 function renderInlineContent(text, colorMap, keyPrefix = "inline") {
+  const reading = getReadingPalette(colorMap);
   const parts = [];
   const pattern =
     /(\[[^\]]+\]\([^)]+\)|`[^`]+`|\*\*[\s\S]+?\*\*|==[\s\S]+?==|<strong>[\s\S]+?<\/strong>|\$[^$\n]+\$|\\\([^)]+\\\))/gi;
@@ -380,8 +452,8 @@ function renderInlineContent(text, colorMap, keyPrefix = "inline") {
           key={key}
           rel={isExternal ? "noreferrer" : undefined}
           style={{
-            borderColor: alpha(colorMap.coral, 0.38),
-            color: colorMap.coral,
+            borderColor: reading.accentLine,
+            color: reading.accent,
           }}
           target={isExternal ? "_blank" : undefined}
         >
@@ -394,8 +466,8 @@ function renderInlineContent(text, colorMap, keyPrefix = "inline") {
           className="rounded-[3px] px-1.5 py-0.5 font-mono text-[0.92em]"
           key={key}
           style={{
-            backgroundColor: alpha(colorMap.coral100, 0.62),
-            color: colorMap.ink950,
+            backgroundColor: reading.codeWash,
+            color: reading.title,
           }}
         >
           {token.slice(1, -1)}
@@ -403,13 +475,13 @@ function renderInlineContent(text, colorMap, keyPrefix = "inline") {
       );
     } else if (token.startsWith("**")) {
       parts.push(
-        <strong className="font-bold" key={key} style={{ color: colorMap.ink950 }}>
+        <strong className="font-bold" key={key} style={{ color: reading.title }}>
           {renderInlineContent(token.slice(2, -2), colorMap, key)}
         </strong>,
       );
     } else if (/^<strong>/i.test(token)) {
       parts.push(
-        <strong className="font-bold" key={key} style={{ color: colorMap.ink950 }}>
+        <strong className="font-bold" key={key} style={{ color: reading.title }}>
           {renderInlineContent(token.replace(/^<strong>/i, "").replace(/<\/strong>$/i, ""), colorMap, key)}
         </strong>,
       );
@@ -419,8 +491,8 @@ function renderInlineContent(text, colorMap, keyPrefix = "inline") {
           className="rounded-[3px] px-1"
           key={key}
           style={{
-            backgroundColor: alpha(colorMap.coral, 0.16),
-            color: colorMap.ink950,
+            backgroundColor: reading.accentSoft,
+            color: reading.title,
           }}
         >
           {renderInlineContent(token.slice(2, -2), colorMap, key)}
@@ -429,16 +501,11 @@ function renderInlineContent(text, colorMap, keyPrefix = "inline") {
     } else {
       const mathText = token.startsWith("\\(") ? token.slice(2, -2) : token.slice(1, -1);
       parts.push(
-        <span
-          className="rounded-[3px] px-1.5 py-0.5 font-mono text-[0.9em]"
+        <LatexMath
+          colorMap={colorMap}
           key={key}
-          style={{
-            backgroundColor: alpha(colorMap.ink950, 0.06),
-            color: colorMap.ink800,
-          }}
-        >
-          {mathText}
-        </span>,
+          math={mathText}
+        />,
       );
     }
 
@@ -459,6 +526,8 @@ function ArticleStructureRail({
   isReducedMotion,
   onToggle,
 }) {
+  const reading = getReadingPalette(colorMap);
+
   if (!headings.length) {
     return null;
   }
@@ -478,13 +547,13 @@ function ArticleStructureRail({
         className="absolute left-3 top-4 z-30 hidden h-9 w-9 place-items-center border text-[13px] font-bold transition duration-200 hover:-translate-y-0.5 lg:grid"
         onClick={onToggle}
         style={{
-          backgroundColor: alpha(colorMap.coral100, 0.72),
-          borderColor: alpha(colorMap.coral, 0.32),
-          color: colorMap.coral,
+          backgroundColor: reading.paperDense,
+          borderColor: reading.lineStrong,
+          color: reading.accent,
         }}
         type="button"
       >
-        {isHidden ? "≡" : "×"}
+        {isHidden ? ">" : "X"}
       </button>
 
       <nav
@@ -493,8 +562,8 @@ function ArticleStructureRail({
           isHidden ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
         style={{
-          backgroundColor: alpha(colorMap.coral100, 0.26),
-          borderColor: alpha(colorMap.ink950, 0.1),
+          backgroundColor: reading.paperSoft,
+          borderColor: reading.line,
           transform: isHidden ? "translateX(-10px)" : "translateX(0)",
         }}
       >
@@ -502,13 +571,13 @@ function ArticleStructureRail({
           <div className="mb-4 flex items-center justify-between gap-4">
             <span
               className="text-[11px] font-bold uppercase tracking-[0.24em]"
-              style={{ color: colorMap.coral }}
+              style={{ color: reading.accent }}
             >
               Structure
             </span>
             <span
               className="h-px flex-1"
-              style={{ backgroundColor: alpha(colorMap.coral, 0.2) }}
+              style={{ backgroundColor: reading.accentLine }}
             />
           </div>
 
@@ -519,15 +588,15 @@ function ArticleStructureRail({
                 key={heading.id}
                 onClick={() => handleJump(heading.id)}
                 style={{
-                  borderColor: alpha(colorMap.coral, heading.level === 2 ? 0.56 : 0.22),
-                  color: colorMap.ink800,
+                  borderColor: heading.level === 2 ? reading.accentLine : reading.line,
+                  color: reading.text,
                   paddingLeft: `${Math.max(0, heading.level - 2) * 12 + 12}px`,
                 }}
                 type="button"
               >
                 <span
                   className="font-mono text-[10px] leading-5"
-                  style={{ color: colorMap.coral }}
+                  style={{ color: reading.accent }}
                 >
                   {String(heading.index).padStart(2, "0")}
                 </span>
@@ -545,6 +614,7 @@ function ArticleStructureRail({
 
 function MarkdownBody({ sections }) {
   const { colorMap } = useProjectTheme();
+  const reading = getReadingPalette(colorMap);
 
   return (
     <div className="mt-8 space-y-8">
@@ -558,15 +628,15 @@ function MarkdownBody({ sections }) {
               className={isPrimary ? "grid scroll-mt-8 gap-5 border-t pt-7 sm:grid-cols-[44px_1fr]" : "scroll-mt-8"}
               id={section.id}
               key={`${section.type}-${index}`}
-              style={{ borderColor: alpha(colorMap.ink950, 0.12) }}
+              style={{ borderColor: reading.line }}
             >
               {isPrimary ? (
                 <div
                   className="grid h-10 w-10 place-items-center rounded-full border text-[12px] font-bold"
                   style={{
-                    backgroundColor: alpha(colorMap.coral100, 0.36),
-                    borderColor: alpha(colorMap.coral, 0.42),
-                    color: colorMap.ink800,
+                    backgroundColor: reading.paperSoft,
+                    borderColor: reading.accentLine,
+                    color: reading.text,
                   }}
                 >
                   {String(section.index).padStart(2, "0")}
@@ -582,7 +652,7 @@ function MarkdownBody({ sections }) {
                         : "text-[13px] font-bold uppercase leading-tight tracking-[0.14em]"
                   }
                   style={{
-                    color: isPrimary ? colorMap.ink950 : colorMap.ink800,
+                    color: isPrimary ? reading.title : reading.text,
                     fontFamily: '"Georgia", "Noto Serif SC", serif',
                   }}
                 >
@@ -601,13 +671,13 @@ function MarkdownBody({ sections }) {
                   className="grid grid-cols-[1.75rem_1fr] text-[15px] leading-8"
                   key={`${item}-${itemIndex}`}
                   style={{
-                    color: colorMap.ink800,
+                    color: reading.text,
                     marginLeft: `${item.level * 22}px`,
                   }}
                 >
                   <span
                     className="font-mono text-[12px]"
-                    style={{ color: colorMap.coral }}
+                    style={{ color: reading.accent }}
                   >
                     {item.ordered ? `${itemIndex + 1}.` : "+"}
                   </span>
@@ -624,16 +694,16 @@ function MarkdownBody({ sections }) {
               className="relative rounded-[4px] border px-7 py-5 text-[15px] leading-8"
               key={`${section.type}-${index}`}
               style={{
-                backgroundColor: alpha(colorMap.coral100, 0.44),
-                borderColor: alpha(colorMap.coral, 0.2),
-                color: colorMap.ink800,
+                backgroundColor: reading.paperSoft,
+                borderColor: reading.line,
+                color: reading.text,
               }}
             >
               <span
                 className="absolute -left-3 top-4 grid h-8 w-8 place-items-center rounded-full text-2xl"
                 style={{
-                  backgroundColor: colorMap.coral100,
-                  color: colorMap.coral,
+                  backgroundColor: reading.paperDense,
+                  color: reading.accent,
                 }}
               >
                 &ldquo;
@@ -649,23 +719,23 @@ function MarkdownBody({ sections }) {
               className="overflow-hidden rounded-[4px] border"
               key={`${section.type}-${index}`}
               style={{
-                backgroundColor: alpha(colorMap.ink950, 0.075),
-                borderColor: alpha(colorMap.coral, 0.18),
+                backgroundColor: reading.codeWash,
+                borderColor: reading.line,
               }}
             >
               {section.language ? (
                 <div
                   className="border-b px-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em]"
                   style={{
-                    borderColor: alpha(colorMap.coral, 0.16),
-                    color: colorMap.coral,
+                    borderColor: reading.line,
+                    color: reading.accent,
                   }}
                 >
                   {section.language}
                 </div>
               ) : null}
               <pre className="overflow-x-auto p-4 text-[13px] leading-7">
-                <code style={{ color: colorMap.ink900 }}>{section.code}</code>
+                <code style={{ color: reading.textStrong }}>{section.code}</code>
               </pre>
             </div>
           );
@@ -673,17 +743,12 @@ function MarkdownBody({ sections }) {
 
         if (section.type === "math") {
           return (
-            <pre
-              className="overflow-x-auto rounded-[4px] border px-5 py-4 text-center font-mono text-[13px] leading-7"
+            <LatexMath
+              colorMap={colorMap}
+              displayMode
               key={`${section.type}-${index}`}
-              style={{
-                backgroundColor: alpha(colorMap.coral100, 0.46),
-                borderColor: alpha(colorMap.coral, 0.22),
-                color: colorMap.ink900,
-              }}
-            >
-              {section.text}
-            </pre>
+              math={section.text}
+            />
           );
         }
 
@@ -692,7 +757,7 @@ function MarkdownBody({ sections }) {
             <div className="overflow-x-auto" key={`${section.type}-${index}`}>
               <table
                 className="min-w-full border-collapse text-left text-[13px]"
-                style={{ color: colorMap.ink800 }}
+                style={{ color: reading.text }}
               >
                 <thead>
                   <tr>
@@ -701,8 +766,8 @@ function MarkdownBody({ sections }) {
                         className="border-b px-4 py-3 font-bold uppercase tracking-[0.12em]"
                         key={`${header}-${headerIndex}`}
                         style={{
-                          borderColor: alpha(colorMap.coral, 0.26),
-                          color: colorMap.ink950,
+                          borderColor: reading.lineStrong,
+                          color: reading.title,
                         }}
                       >
                         {renderInlineContent(header, colorMap, `${section.type}-${index}-head-${headerIndex}`)}
@@ -717,7 +782,7 @@ function MarkdownBody({ sections }) {
                         <td
                           className="border-b px-4 py-3 leading-7"
                           key={`${cell}-${cellIndex}`}
-                          style={{ borderColor: alpha(colorMap.ink950, 0.1) }}
+                          style={{ borderColor: reading.line }}
                         >
                           {renderInlineContent(cell, colorMap, `${section.type}-${index}-cell-${rowIndex}-${cellIndex}`)}
                         </td>
@@ -733,9 +798,9 @@ function MarkdownBody({ sections }) {
         if (section.type === "divider") {
           return (
             <div className="flex items-center gap-3" key={`${section.type}-${index}`}>
-              <span className="h-px flex-1" style={{ backgroundColor: alpha(colorMap.ink950, 0.12) }} />
-              <span className="text-lg leading-none" style={{ color: colorMap.coral }}>+</span>
-              <span className="h-px flex-1" style={{ backgroundColor: alpha(colorMap.ink950, 0.12) }} />
+              <span className="h-px flex-1" style={{ backgroundColor: reading.line }} />
+              <span className="text-lg leading-none" style={{ color: reading.accent }}>+</span>
+              <span className="h-px flex-1" style={{ backgroundColor: reading.line }} />
             </div>
           );
         }
@@ -744,7 +809,7 @@ function MarkdownBody({ sections }) {
           <p
             className="max-w-[86ch] text-[15px] leading-8 tracking-[0.04em]"
             key={`${section.type}-${index}`}
-            style={{ color: colorMap.ink800 }}
+            style={{ color: reading.text }}
           >
             {renderInlineContent(section.text, colorMap, `${section.type}-${index}`)}
           </p>
@@ -757,6 +822,7 @@ function MarkdownBody({ sections }) {
 export default function WritingArticlePage({ post, recentPosts = [] }) {
   const isReducedMotion = useReducedMotion();
   const { colorMap } = useProjectTheme();
+  const reading = getReadingPalette(colorMap);
   const sections = useMemo(
     () => getArticleSections(post.content, post.title),
     [post.content, post.title],
@@ -840,10 +906,10 @@ export default function WritingArticlePage({ post, recentPosts = [] }) {
         <section
           className="relative flex h-full min-h-0 flex-col overflow-hidden border shadow-xl backdrop-blur-[2px]"
           style={{
-            backgroundColor: alpha(colorMap.coral100, 0.62),
-            borderColor: alpha(colorMap.coral, 0.22),
-            boxShadow: `0 28px 80px ${alpha(colorMap.ink950, 0.12)}`,
-            color: colorMap.ink950,
+            backgroundColor: reading.paper,
+            borderColor: reading.lineStrong,
+            boxShadow: `0 28px 80px ${alpha(colorMap.ink950, 0.1)}`,
+            color: reading.title,
           }}
         >
           <div
@@ -852,13 +918,13 @@ export default function WritingArticlePage({ post, recentPosts = [] }) {
           >
             <span
               className="absolute bottom-0 right-[9px] top-0 w-px"
-              style={{ backgroundColor: alpha(colorMap.coral, 0.22) }}
+              style={{ backgroundColor: reading.line }}
             />
             <span
               className="absolute right-[7px] h-[clamp(76px,16vh,150px)] w-1"
               style={{
-                backgroundColor: colorMap.coral,
-                boxShadow: `0 0 18px ${alpha(colorMap.coral, 0.18)}`,
+                backgroundColor: reading.accent,
+                boxShadow: `0 0 18px ${alpha(colorMap.coral, 0.12)}`,
                 opacity: scrollState.canScroll ? 1 : 0.46,
                 top: `${scrollState.progress * 100}%`,
                 transform: `translateY(-${scrollState.progress * 100}%)`,
@@ -868,16 +934,16 @@ export default function WritingArticlePage({ post, recentPosts = [] }) {
 
           <div
             className="relative z-10 shrink-0 border-b px-5 pb-4 pt-9 sm:px-10 lg:px-12 xl:px-14"
-            style={{ borderColor: alpha(colorMap.ink950, 0.08) }}
+            style={{ borderColor: reading.line }}
           >
             <TransitionLink
               className="inline-flex items-center gap-3 border px-3 py-2 text-[13px] font-bold uppercase tracking-[0.2em] transition duration-200 ease-out hover:-translate-x-1"
               href="/#writing"
               label="Back to notes"
               style={{
-                backgroundColor: alpha(colorMap.coral100, 0.54),
-                borderColor: alpha(colorMap.coral, 0.34),
-                color: colorMap.coral,
+                backgroundColor: reading.paperDense,
+                borderColor: reading.lineStrong,
+                color: reading.accent,
               }}
             >
               <span aria-hidden="true" className="text-[16px] leading-none">&larr;</span>
@@ -910,47 +976,47 @@ export default function WritingArticlePage({ post, recentPosts = [] }) {
               <h1
                 className="max-w-[980px] text-[clamp(2.25rem,4.3vw,4.5rem)] font-semibold leading-[1.05] tracking-[0.02em]"
                 style={{
-                  color: colorMap.ink950,
+                  color: reading.title,
                   fontFamily: '"Georgia", "Noto Serif SC", serif',
                 }}
               >
                 {post.title}
               </h1>
-              <p className="mt-4 max-w-3xl text-[15px] leading-7 tracking-[0.08em]" style={{ color: colorMap.ink800 }}>
+              <p className="mt-4 max-w-3xl text-[15px] leading-7 tracking-[0.08em]" style={{ color: reading.text }}>
                 {post.excerpt}
               </p>
 
               <div
                 className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-3 border-b pb-5 text-[12px] font-semibold tracking-[0.12em]"
                 style={{
-                  borderColor: alpha(colorMap.ink950, 0.12),
-                  color: colorMap.ink800,
+                  borderColor: reading.line,
+                  color: reading.text,
                 }}
               >
                 <span className="inline-flex items-center gap-3">
-                  <CalendarIcon color={colorMap.coral} />
+                  <CalendarIcon color={reading.accent} />
                   {formatDateLabel(post.date)}
                 </span>
                 <span className="inline-flex items-center gap-3">
-                  <FolderIcon color={colorMap.coral} />
+                  <FolderIcon color={reading.accent} />
                   {post.category}
                 </span>
-                <span className="ml-auto text-[11px] uppercase tracking-[0.22em]" style={{ color: colorMap.coral }}>
-                  {post.tags?.[0] ?? "Lifestyle"} / 写作
+                <span className="ml-auto text-[11px] uppercase tracking-[0.22em]" style={{ color: reading.accent }}>
+                  {post.tags?.[0] ?? "Lifestyle"}
                 </span>
               </div>
               </header>
 
             <ArticleMapHero colorMap={colorMap} variant={mapVariant} />
 
-            <p className="mt-7 max-w-[92ch] text-[16px] leading-8 tracking-[0.04em]" style={{ color: colorMap.ink800 }}>
+            <p className="mt-7 max-w-[92ch] text-[16px] leading-8 tracking-[0.04em]" style={{ color: reading.text }}>
               {post.excerpt}
             </p>
 
             <div className="my-7 flex items-center gap-4">
-              <span className="h-px flex-1" style={{ backgroundColor: alpha(colorMap.ink950, 0.12) }} />
-              <span className="text-lg leading-none" style={{ color: colorMap.coral }}>+</span>
-              <span className="h-px flex-1" style={{ backgroundColor: alpha(colorMap.ink950, 0.12) }} />
+              <span className="h-px flex-1" style={{ backgroundColor: reading.line }} />
+              <span className="text-lg leading-none" style={{ color: reading.accent }}>+</span>
+              <span className="h-px flex-1" style={{ backgroundColor: reading.line }} />
             </div>
 
             <MarkdownBody sections={sections} />

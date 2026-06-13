@@ -26,7 +26,7 @@ const SOCIAL_LINKS = Object.freeze([
 function SocialIcon({ name }) {
   if (name === "bilibili") {
     return (
-      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-full w-full" fill="none" viewBox="0 0 24 24">
         <path d="M8.2 5.2 6.4 3.4M15.8 5.2l1.8-1.8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
         <rect height="13.2" rx="3.2" stroke="currentColor" strokeWidth="1.8" width="18" x="3" y="6.5" />
         <path d="M9 12.2v1.1M15 12.2v1.1M10 16h4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
@@ -36,7 +36,7 @@ function SocialIcon({ name }) {
 
   if (name === "github") {
     return (
-      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-full w-full" fill="none" viewBox="0 0 24 24">
         <path
           d="M9.2 19.6c-4.2 1.1-4.2-2-5.8-2.4m11.6 4v-3.1c0-.9.3-1.5.7-1.9 2.4-.3 4.9-1.2 4.9-5.4 0-1.2-.4-2.2-1.1-3 .1-.3.5-1.5-.1-3-1 0-3.1 1.2-3.1 1.2a10.5 10.5 0 0 0-5.6 0s-2.1-1.2-3.1-1.2c-.6 1.5-.2 2.7-.1 3a4.2 4.2 0 0 0-1.1 3c0 4.2 2.5 5.1 4.9 5.4.3.3.6.8.6 1.5v3.5"
           stroke="currentColor"
@@ -49,7 +49,7 @@ function SocialIcon({ name }) {
   }
 
   return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className="h-full w-full" fill="none" viewBox="0 0 24 24">
       <path
         d="M8.2 14.8 3.8 13a2.9 2.9 0 0 0 5.6 1.8l4.2 1.8"
         stroke="currentColor"
@@ -97,7 +97,7 @@ export default function SocialLinks({ align = "left", className = "", variant = 
         >
           <span
             className={`grid place-items-center p-1.5 transition-transform duration-200 group-hover:rotate-[-8deg] ${
-              isOutlineSquare ? "h-6 w-6" : "h-7 w-7 rounded-full"
+              isOutlineSquare ? "h-8 w-8" : "h-8 w-8 rounded-full"
             }`}
             style={{
               backgroundColor: isOutlineSquare ? "transparent" : colorMap.coral,

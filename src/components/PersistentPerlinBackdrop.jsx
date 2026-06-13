@@ -11,6 +11,12 @@ import {
 } from "@/features/visual-labs/pages/PerlinContoursPage";
 
 const BACKDROP_ROUTES = ["/", "/home", "/perlin-contours", "/writing"];
+const ARTICLE_DETAIL_CONTOUR_CONTROLS = Object.freeze({
+  speed: 0.1,
+  sharpness: 0,
+  curvature: 0.1,
+  thickness: 0,
+});
 const WHEEL_CURVATURE_TARGET = 0;
 const WHEEL_CURVATURE_RESET_MS = 140;
 const WHEEL_CURVATURE_IGNORE_SELECTOR = [
@@ -30,6 +36,10 @@ function shouldShowBackdrop(pathname) {
   ));
 }
 
+function isArticleDetailRoute(pathname) {
+  return /^\/writing\/[^/]+\/?$/.test(pathname);
+}
+
 function shouldIgnoreWheelCurvature(target) {
   return target instanceof Element && Boolean(target.closest(WHEEL_CURVATURE_IGNORE_SELECTOR));
 }
@@ -38,9 +48,12 @@ export default function PersistentPerlinBackdrop() {
   const pathname = usePathname();
   const isReducedMotion = useReducedMotion();
   const { colorMap, contourControls } = useProjectTheme();
+  const activeContourControls = isArticleDetailRoute(pathname)
+    ? ARTICLE_DETAIL_CONTOUR_CONTROLS
+    : contourControls;
   const themedControls = useMemo(
-    () => makeDefaultControls(colorMap, contourControls),
-    [colorMap, contourControls],
+    () => makeDefaultControls(colorMap, activeContourControls),
+    [colorMap, activeContourControls],
   );
   const controlsSignature = `${themedControls.backgroundColor}-${themedControls.lineColor}`;
   const controlsRef = useRef(themedControls);
@@ -62,7 +75,7 @@ export default function PersistentPerlinBackdrop() {
   }, [themedControls]);
 
   useEffect(() => {
-    if (!isVisible || isReducedMotion) {
+    if (!isVisible || isReducedMotion || isArticleDetailRoute(pathname)) {
       controlsRef.current.curvatureOverride = null;
       window.clearTimeout(curvatureResetTimerRef.current);
       return undefined;
@@ -92,7 +105,7 @@ export default function PersistentPerlinBackdrop() {
       window.clearTimeout(curvatureResetTimerRef.current);
       controlsRef.current.curvatureOverride = null;
     };
-  }, [isReducedMotion, isVisible]);
+  }, [isReducedMotion, isVisible, pathname]);
 
   if (!isVisible) {
     return null;

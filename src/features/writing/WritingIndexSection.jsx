@@ -7,6 +7,23 @@ import { useProjectTheme } from "@/context/ProjectThemeContext";
 
 const POSTS_PER_PAGE = 8;
 
+function getReadingPalette(colorMap) {
+  return {
+    accent: colorMap.coral,
+    accentLine: alpha(colorMap.coral, 0.34),
+    accentSoft: alpha(colorMap.coral200, 0.48),
+    line: alpha(colorMap.ink950, 0.16),
+    lineStrong: alpha(colorMap.ink950, 0.24),
+    muted: colorMap.ink800,
+    paper: alpha(colorMap.coral100, 0.84),
+    paperDense: alpha(colorMap.coral100, 0.98),
+    paperSoft: alpha(colorMap.coral200, 0.62),
+    quiet: colorMap.ink700,
+    text: colorMap.ink950,
+    title: colorMap.ink950,
+  };
+}
+
 function WritingScrollArea({ children, className = "" }) {
   const scrollRef = useRef(null);
   const [metrics, setMetrics] = useState({ height: 100, isScrollable: false, top: 0 });
@@ -75,10 +92,13 @@ function WritingScrollArea({ children, className = "" }) {
 }
 
 function ArticleThumb({ colorMap, index }) {
+  const reading = getReadingPalette(colorMap);
   const patterns = [
-    `radial-gradient(circle at 50% 50%, ${alpha(colorMap.coral, 0.72)} 0 4px, transparent 5px), repeating-radial-gradient(circle at 50% 50%, transparent 0 12px, ${alpha(colorMap.coral, 0.12)} 13px 14px)`,
-    `linear-gradient(135deg, ${alpha(colorMap.coral, 0.12)}, transparent), repeating-linear-gradient(160deg, transparent 0 14px, ${alpha(colorMap.coral, 0.12)} 15px 16px)`,
-    `radial-gradient(circle at 28% 70%, ${alpha(colorMap.coral, 0.65)} 0 4px, transparent 5px), radial-gradient(circle at 72% 35%, ${alpha(colorMap.coral, 0.55)} 0 4px, transparent 5px), linear-gradient(135deg, ${alpha(colorMap.coral100, 0.8)}, ${alpha(colorMap.coral, 0.12)})`,
+    `radial-gradient(circle at 50% 50%, ${alpha(colorMap.coral, 0.66)} 0 5px, transparent 6px), repeating-radial-gradient(circle at 50% 50%, transparent 0 10px, ${alpha(colorMap.coral, 0.3)} 11px 13px, transparent 14px 20px), linear-gradient(135deg, ${reading.paperDense}, ${reading.paperSoft})`,
+    `linear-gradient(135deg, ${reading.paperSoft}, transparent), repeating-linear-gradient(160deg, transparent 0 11px, ${alpha(colorMap.coral, 0.28)} 12px 14px, transparent 15px 25px), repeating-linear-gradient(70deg, transparent 0 24px, ${alpha(colorMap.ink950, 0.08)} 25px 27px)`,
+    `radial-gradient(circle at 28% 70%, ${alpha(colorMap.coral, 0.6)} 0 5px, transparent 6px), radial-gradient(circle at 72% 35%, ${alpha(colorMap.coral, 0.5)} 0 5px, transparent 6px), radial-gradient(circle at 28% 70%, transparent 0 13px, ${alpha(colorMap.coral, 0.22)} 14px 16px, transparent 17px 30px), linear-gradient(135deg, ${reading.paperDense}, ${reading.accentSoft})`,
+    `radial-gradient(ellipse at 36% 58%, transparent 0 12px, ${alpha(colorMap.coral, 0.26)} 13px 15px, transparent 16px 29px), radial-gradient(ellipse at 64% 42%, transparent 0 18px, ${alpha(colorMap.ink950, 0.12)} 19px 21px, transparent 22px 38px), repeating-radial-gradient(ellipse at 46% 50%, transparent 0 16px, ${alpha(colorMap.coral, 0.18)} 17px 19px, transparent 20px 32px), linear-gradient(145deg, ${reading.paperDense}, ${reading.paperSoft})`,
+    `radial-gradient(circle at 24% 28%, ${alpha(colorMap.coral, 0.58)} 0 4px, transparent 5px), radial-gradient(circle at 76% 72%, ${alpha(colorMap.coral, 0.44)} 0 4px, transparent 5px), linear-gradient(32deg, transparent 0 47%, ${alpha(colorMap.coral, 0.32)} 48% 51%, transparent 52%), repeating-linear-gradient(0deg, transparent 0 14px, ${alpha(colorMap.ink950, 0.08)} 15px 17px), repeating-linear-gradient(90deg, transparent 0 18px, ${alpha(colorMap.ink950, 0.08)} 19px 21px), linear-gradient(135deg, ${reading.paperDense}, ${reading.paperSoft})`,
   ];
 
   return (
@@ -86,7 +106,7 @@ function ArticleThumb({ colorMap, index }) {
       className="relative h-28 w-36 shrink-0 overflow-hidden border max-lg:h-16 max-lg:w-20"
       style={{
         background: patterns[index % patterns.length],
-        borderColor: alpha(colorMap.coral, 0.22),
+        borderColor: reading.line,
       }}
     />
   );
@@ -146,6 +166,7 @@ function LoadMoreTrigger({ onLoadMore, hasMore }) {
 }
 
 function MobileTagDropdown({ topics, activeTags, onToggleTag, colorMap }) {
+  const reading = getReadingPalette(colorMap);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -173,9 +194,9 @@ function MobileTagDropdown({ topics, activeTags, onToggleTag, colorMap }) {
         className="flex w-full items-center justify-between border px-4 py-2.5 text-sm transition"
         onClick={() => setIsOpen((current) => !current)}
         style={{
-          backgroundColor: alpha(colorMap.coral100, 0.42),
-          borderColor: alpha(colorMap.coral, 0.24),
-          color: colorMap.ink800,
+          backgroundColor: reading.paper,
+          borderColor: reading.line,
+          color: reading.text,
         }}
         type="button"
       >
@@ -193,9 +214,9 @@ function MobileTagDropdown({ topics, activeTags, onToggleTag, colorMap }) {
         <div
           className="absolute left-0 right-0 z-30 mt-1 max-h-[50vh] overflow-y-auto border p-3 backdrop-blur-md"
           style={{
-            backgroundColor: alpha(colorMap.coral100, 0.92),
-            borderColor: alpha(colorMap.coral, 0.32),
-            boxShadow: `0 12px 32px ${alpha(colorMap.ink950, 0.18)}`,
+            backgroundColor: reading.paperDense,
+            borderColor: reading.lineStrong,
+            boxShadow: `0 12px 32px ${alpha(colorMap.ink950, 0.12)}`,
           }}
         >
           <div className="flex flex-wrap gap-2">
@@ -207,9 +228,9 @@ function MobileTagDropdown({ topics, activeTags, onToggleTag, colorMap }) {
                   key={topic}
                   onClick={() => onToggleTag(topic)}
                   style={{
-                    backgroundColor: isActive ? colorMap.coral : alpha(colorMap.coral100, 0.4),
-                    borderColor: isActive ? colorMap.coral : alpha(colorMap.coral, 0.24),
-                    color: isActive ? colorMap.coral100 : colorMap.ink800,
+                    backgroundColor: isActive ? colorMap.ink900 : reading.paperSoft,
+                    borderColor: isActive ? colorMap.ink900 : reading.line,
+                    color: isActive ? colorMap.neutral100 : reading.text,
                   }}
                   type="button"
                 >
@@ -226,6 +247,7 @@ function MobileTagDropdown({ topics, activeTags, onToggleTag, colorMap }) {
 
 function WritingIndexSection({ className = "", posts = [] }) {
   const { colorMap } = useProjectTheme();
+  const reading = getReadingPalette(colorMap);
   const allPosts = useMemo(() => posts, [posts]);
   const allTags = useMemo(() => getTagsFromPosts(allPosts), [allPosts]);
   const topics = useMemo(() => {
@@ -275,9 +297,9 @@ function WritingIndexSection({ className = "", posts = [] }) {
       id="writing"
       style={{
         "--writing-scroll-hover": colorMap.ink700,
-        "--writing-scroll-thumb": colorMap.coral,
-        "--writing-scroll-track": alpha(colorMap.coral100, 0.52),
-        color: colorMap.ink950,
+        "--writing-scroll-thumb": colorMap.ink700,
+        "--writing-scroll-track": reading.paperSoft,
+        color: reading.title,
       }}
     >
       <style>
@@ -299,11 +321,11 @@ function WritingIndexSection({ className = "", posts = [] }) {
         <section
           className="flex min-h-0 flex-col border backdrop-blur-[2px]"
           style={{
-            backgroundColor: alpha(colorMap.coral100, 0.42),
-            borderColor: alpha(colorMap.coral, 0.22),
+            backgroundColor: reading.paper,
+            borderColor: reading.line,
           }}
         >
-          <div className="px-5 pt-5 text-xs uppercase tracking-[0.28em]" style={{ color: colorMap.ink700 }}>
+          <div className="px-5 pt-5 text-xs uppercase tracking-[0.28em]" style={{ color: reading.muted }}>
             Filter by topic
           </div>
           <WritingScrollArea className="h-full p-5 pr-6">
@@ -317,9 +339,9 @@ function WritingIndexSection({ className = "", posts = [] }) {
                     key={topic}
                     onClick={() => handleToggleTag(topic)}
                     style={{
-                      backgroundColor: isActive ? colorMap.coral : alpha(colorMap.coral100, 0.4),
-                      borderColor: isActive ? colorMap.coral : alpha(colorMap.coral, 0.24),
-                      color: isActive ? colorMap.coral100 : colorMap.ink800,
+                      backgroundColor: isActive ? colorMap.ink900 : reading.paperSoft,
+                      borderColor: isActive ? colorMap.ink900 : reading.line,
+                      color: isActive ? colorMap.neutral100 : reading.text,
                     }}
                     type="button"
                   >
@@ -340,21 +362,21 @@ function WritingIndexSection({ className = "", posts = [] }) {
                 key={post.slug}
                 label={post.title}
                 style={{
-                  backgroundColor: alpha(colorMap.coral100, 0.46),
-                  borderColor: alpha(colorMap.coral, 0.22),
-                  color: colorMap.ink800,
+                  backgroundColor: reading.paper,
+                  borderColor: reading.line,
+                  color: reading.text,
                 }}
               >
                 <ArticleThumb colorMap={colorMap} index={index} />
                 <div>
                   <h2 className="text-lg font-bold leading-snug tracking-[0.04em]">{post.title}</h2>
-                  <p className="mt-4 max-w-2xl text-sm leading-relaxed tracking-[0.08em]" style={{ color: colorMap.ink700 }}>
+                  <p className="mt-4 max-w-2xl text-sm leading-relaxed tracking-[0.08em]" style={{ color: reading.muted }}>
                     {post.excerpt}
                   </p>
                 </div>
-                <div className="flex items-center gap-5 text-xs tracking-[0.12em]" style={{ color: colorMap.ink600 }}>
+                <div className="flex items-center gap-5 text-xs tracking-[0.12em]" style={{ color: reading.quiet }}>
                   <span>{post.date}</span>
-                  <span className="grid h-10 w-10 place-items-center border text-xl transition group-hover:translate-x-1" style={{ borderColor: alpha(colorMap.coral, 0.32), color: colorMap.coral }}>
+                  <span className="grid h-10 w-10 place-items-center border text-xl transition group-hover:translate-x-1" style={{ borderColor: reading.accentLine, color: reading.accent }}>
                     →
                   </span>
                 </div>
@@ -385,22 +407,22 @@ function WritingIndexSection({ className = "", posts = [] }) {
                 key={post.slug}
                 label={post.title}
                 style={{
-                  backgroundColor: alpha(colorMap.coral100, 0.46),
-                  borderColor: alpha(colorMap.coral, 0.22),
-                  color: colorMap.ink800,
+                  backgroundColor: reading.paper,
+                  borderColor: reading.line,
+                  color: reading.text,
                 }}
               >
                 <ArticleThumb colorMap={colorMap} index={index} />
                 <div className="min-w-0 flex-1">
                   <h2 className="text-sm font-bold leading-snug tracking-[0.04em]">{post.title}</h2>
-                  <p className="mt-2 text-xs leading-relaxed tracking-[0.08em] line-clamp-2" style={{ color: colorMap.ink700 }}>
+                  <p className="mt-2 text-xs leading-relaxed tracking-[0.08em] line-clamp-2" style={{ color: reading.muted }}>
                     {post.excerpt}
                   </p>
-                  <div className="mt-2 flex items-center gap-3 text-[10px] tracking-[0.12em]" style={{ color: colorMap.ink600 }}>
+                  <div className="mt-2 flex items-center gap-3 text-[10px] tracking-[0.12em]" style={{ color: reading.quiet }}>
                     <span>{post.date}</span>
                   </div>
                 </div>
-                <span className="grid h-7 w-7 shrink-0 place-items-center border text-sm transition group-hover:translate-x-1" style={{ borderColor: alpha(colorMap.coral, 0.32), color: colorMap.coral }}>
+                <span className="grid h-7 w-7 shrink-0 place-items-center border text-sm transition group-hover:translate-x-1" style={{ borderColor: reading.accentLine, color: reading.accent }}>
                   →
                 </span>
               </TransitionLink>
