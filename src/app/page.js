@@ -1,10 +1,6 @@
-import dynamic from "next/dynamic";
-import { getAllPosts } from "@/lib/posts";
-
-const PerlinContoursPage = dynamic(() => import("@/features/visual-labs/pages/PerlinContoursPage"), { ssr: false });
+import AstralHome from "../components/AstralHome";
+import { getPosts } from "../lib/posts";
 
 export default function Page() {
-  const posts = getAllPosts();
-
-  return <PerlinContoursPage posts={posts} />;
+  return <AstralHome posts={getPosts()} />;
 }

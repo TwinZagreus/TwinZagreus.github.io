@@ -1,79 +1,48 @@
 import fs from "node:fs";
 import path from "node:path";
+import matter from "gray-matter";
+import readingTime from "reading-time";
 
-const POSTS_DIR = path.join(process.cwd(), "content", "posts");
+const postsDirectory = path.join(process.cwd(), "content", "posts");
 
-function parseFrontmatter(source) {
-  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
-  if (!match) {
-    return { content: source, meta: {} };
+function parseValue(value) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    return trimmed
+      .slice(1, -1)
+      .split(",")
+      .map((item) => item.trim().replace(/^['\"]|['\"]$/g, ""))
+      .filter(Boolean);
   }
-
-  const meta = Object.fromEntries(
-    match[1]
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const separator = line.indexOf(":");
-        const key = line.slice(0, separator).trim();
-        const rawValue = line.slice(separator + 1).trim();
-        const value = rawValue.includes(",")
-          ? rawValue.split(",").map((item) => item.trim()).filter(Boolean)
-          : rawValue;
-        return [key, value];
-      }),
-  );
-
-  return { content: match[2].trim(), meta };
+  return trimmed.replace(/^['\"]|['\"]$/g, "");
 }
 
-function normalizeTags(value) {
-  if (Array.isArray(value)) {
-    return value;
-  }
+function parseMarkdownFile(filename) {
+  const raw = fs.readFileSync(path.join(postsDirectory, filename), "utf8");
+  const parsed = matter(raw);
+  const data = parsed.data;
+  const body = parsed.content.trim();
+  const words = readingTime(body).minutes;
 
-  if (typeof value !== "string") {
-    return [];
-  }
-
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return {
+    ...data,
+    slug: data.slug || filename.replace(/\.md$/, ""),
+    tags: Array.isArray(data.tags) ? data.tags : parseValue(data.tags || ""),
+    date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : String(data.date || ""),
+    body,
+    readingTime: `${Math.max(1, Math.ceil(words))} min read`,
+  };
 }
 
-export function getAllPosts() {
+export function getPosts() {
+  if (!fs.existsSync(postsDirectory)) return [];
   return fs
-    .readdirSync(POSTS_DIR)
-    .filter((fileName) => fileName.endsWith(".md"))
-    .map((fileName) => {
-      const source = fs.readFileSync(path.join(POSTS_DIR, fileName), "utf8");
-      const { content, meta } = parseFrontmatter(source);
-      return {
-        category: meta.category,
-        content,
-        date: meta.date,
-        excerpt: meta.excerpt,
-        slug: meta.slug ?? fileName.replace(/\.md$/, ""),
-        tags: normalizeTags(meta.tags),
-        title: meta.title,
-      };
-    })
-    .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
+    .readdirSync(postsDirectory)
+    .filter((filename) => filename.endsWith(".md"))
+    .map(parseMarkdownFile)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 export function getPostBySlug(slug) {
-  return getAllPosts().find((post) => post.slug === slug) ?? null;
-}
-
-export function getPostsByCategory() {
-  return getAllPosts().reduce((groups, post) => {
-    const category = post.category;
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(post);
-    return groups;
-  }, {});
+  return getPosts().find((post) => post.slug === slug);
 }
