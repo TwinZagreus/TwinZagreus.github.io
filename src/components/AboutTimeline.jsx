@@ -1,7 +1,7 @@
 const milestones = [
-  { years: "2024 — now", company: "Independent / Astral Notes", role: "Creative technologist", project: "Building quiet software with loud atmospheres. A personal lab for motion, generative visuals, and the space between a thought and a screen." },
-  { years: "2021 — 2024", company: "Northstar Studio", role: "Senior interaction designer", project: "Shaped digital identities for teams working in climate, mobility, and culture. Led the visual language for a real-time cartography platform." },
-  { years: "2018 — 2021", company: "Signal / Tokyo", role: "Designer & developer", project: "Turned research into tactile interfaces: installations, prototypes, and an early obsession with particles that never quite sit still." },
+  { years: "2024 - now", company: "Independent / Astral Notes", role: "Creative technologist", project: "Building quiet software with loud atmospheres. A personal lab for motion, generative visuals, and the space between a thought and a screen." },
+  { years: "2021 - 2024", company: "Northstar Studio", role: "Senior interaction designer", project: "Shaped digital identities for teams working in climate, mobility, and culture. Led the visual language for a real-time cartography platform." },
+  { years: "2018 - 2021", company: "Signal / Tokyo", role: "Designer & developer", project: "Turned research into tactile interfaces: installations, prototypes, and an early obsession with particles that never quite sit still." },
 ];
 
 export default function AboutTimeline({ standalone = false }) {
@@ -17,13 +17,14 @@ export default function AboutTimeline({ standalone = false }) {
       <div className="timeline">
         {milestones.map((milestone, index) => (
           <article className="timeline-item reveal-up" key={milestone.company} style={{ "--row-delay": `${index * 110}ms` }}>
-            <div className="timeline-marker"><span>0{index + 1}</span><i /></div>
+            <div className="timeline-marker"><span>{String(index + 1).padStart(2, "0")}</span><i /></div>
             <div className="timeline-company"><p>{milestone.years}</p><h3>{milestone.company}</h3><span>{milestone.role}</span></div>
-            <div className="timeline-project"><p className="eyebrow">PROJECT / 0{index + 1}</p><p>{milestone.project}</p></div>
+            <div className="timeline-project"><p className="eyebrow">PROJECT / {String(index + 1).padStart(2, "0")}</p><p>{milestone.project}</p></div>
           </article>
         ))}
       </div>
-      <div className="about-footer"><span>Available for selected collaborations</span><a href="mailto:hello@astralnotes.dev">Say hello <span>↗</span></a></div>
+      <div className="about-footer"><span>Available for selected collaborations</span><a href="mailto:543150640@qq.com">Say hello <span>→</span></a></div>
+      {!standalone && <footer className="section-footer"><span>TWINZ © 2026</span><a href="#home">Return to top</a></footer>}
     </section>
   );
 }

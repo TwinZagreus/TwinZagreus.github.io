@@ -13,3 +13,4 @@ __pycache__/
 *.pyc
 backend/data/*.db
 backend/uploads/
+.playwright-cli/*
