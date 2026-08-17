@@ -10,10 +10,13 @@ const ORBIT_LIGHT_INTENSITY = {
   glow: 0.5,  // 辉光与阴影
 };
 
-export default function SpaceCanvas({ mode = "home", className = "", pauseWhenOffscreen = false, dustCountOverride = null }) {
+export default function SpaceCanvas({ mode = "home", className = "", pauseWhenOffscreen = false, dustCountOverride = null, motionPaused = false, benchmarkRendering = false, onFrameRateChange = null }) {
   const canvasRef = useRef(null);
   const dustCountRef = useRef(dustCountOverride);
+  const playbackRef = useRef(null);
+  const frameRateCallbackRef = useRef(onFrameRateChange);
   dustCountRef.current = dustCountOverride;
+  frameRateCallbackRef.current = onFrameRateChange;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -24,6 +27,11 @@ export default function SpaceCanvas({ mode = "home", className = "", pauseWhenOf
       || (Number.isFinite(navigator.hardwareConcurrency) && navigator.hardwareConcurrency <= 4);
     let frame = 0;
     let isVisible = true;
+    let isMotionPaused = motionPaused;
+    let isBenchmarkRendering = benchmarkRendering;
+    let frameCount = 0;
+    let frameSampleStart = performance.now();
+    let reportedFrameRate = -1;
     let width = 0;
     let height = 0;
     let dpr = 1;
@@ -241,7 +249,11 @@ export default function SpaceCanvas({ mode = "home", className = "", pauseWhenOf
       if (mode === "home") rebuildGalaxyDust();
     };
 
-    const draw = (time) => {
+    const draw = (time, renderWhilePaused = false) => {
+      if (isMotionPaused && !renderWhilePaused) {
+        frame = 0;
+        return;
+      }
       context.clearRect(0, 0, width, height);
       context.fillStyle = mode === "home" ? "rgba(4, 6, 18, 0.42)" : "rgba(3, 5, 15, 0.78)";
       context.fillRect(0, 0, width, height);
@@ -338,19 +350,70 @@ export default function SpaceCanvas({ mode = "home", className = "", pauseWhenOf
       });
       context.globalAlpha = 1;
 
-      if (!reducedMotion && isVisible) frame = requestAnimationFrame(draw);
+      frameCount += 1;
+      if (time - frameSampleStart >= 500) {
+        const nextFrameRate = Math.round((frameCount * 1000) / (time - frameSampleStart));
+        frameRateCallbackRef.current?.(nextFrameRate);
+        reportedFrameRate = nextFrameRate;
+        frameCount = 0;
+        frameSampleStart = time;
+      }
+
+      if (!reducedMotion && (isVisible || isBenchmarkRendering) && !isMotionPaused) frame = requestAnimationFrame(draw);
       else frame = 0;
     };
 
+    const setMotionPaused = (nextPaused) => {
+      if (isMotionPaused === nextPaused) return;
+      isMotionPaused = nextPaused;
+
+      if (isMotionPaused) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+        frameCount = 0;
+        frameSampleStart = performance.now();
+        reportedFrameRate = 0;
+        frameRateCallbackRef.current?.(0);
+        return;
+      }
+
+      if ((isVisible || isBenchmarkRendering) && frame === 0) {
+        dustDirty = true;
+        draw(performance.now());
+      }
+    };
+
+    const setBenchmarkRendering = (nextBenchmarkRendering) => {
+      if (isBenchmarkRendering === nextBenchmarkRendering) return;
+      isBenchmarkRendering = nextBenchmarkRendering;
+
+      if (!isBenchmarkRendering && !isVisible) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+        return;
+      }
+
+      if (!isMotionPaused && frame === 0) {
+        dustDirty = true;
+        draw(performance.now());
+      }
+    };
+
     const move = (event) => {
-      if (!isVisible) return;
+      if (!isVisible || isMotionPaused) return;
       pointer.x = event.clientX / window.innerWidth;
       pointer.y = event.clientY / window.innerHeight;
     };
 
+    const handleResize = () => {
+      resize();
+      if (isMotionPaused && isVisible) draw(performance.now(), true);
+    };
+
     resize();
-    draw(0);
-    window.addEventListener("resize", resize);
+    draw(0, true);
+    playbackRef.current = { setMotionPaused, setBenchmarkRendering };
+    window.addEventListener("resize", handleResize);
     window.addEventListener("pointermove", move, { passive: true });
     const observer = pauseWhenOffscreen && "IntersectionObserver" in window
       ? new IntersectionObserver(([entry]) => {
@@ -358,25 +421,44 @@ export default function SpaceCanvas({ mode = "home", className = "", pauseWhenOf
         if (nextVisible === isVisible) return;
 
         isVisible = nextVisible;
-        if (!isVisible) {
+        if (!isVisible && !isBenchmarkRendering) {
           cancelAnimationFrame(frame);
           frame = 0;
+          frameCount = 0;
+          frameSampleStart = performance.now();
+          reportedFrameRate = 0;
+          frameRateCallbackRef.current?.(0);
           return;
         }
 
         dustDirty = true;
-        if (frame === 0) draw(performance.now());
+        if (!isVisible) return;
+        if (isMotionPaused) {
+          draw(performance.now(), true);
+        } else if (frame === 0) {
+          draw(performance.now());
+        }
       }, { threshold: 0.01 })
       : null;
 
     observer?.observe(canvas);
     return () => {
       cancelAnimationFrame(frame);
+      frameRateCallbackRef.current?.(0);
+      playbackRef.current = null;
       observer?.disconnect();
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", handleResize);
       window.removeEventListener("pointermove", move);
     };
   }, [mode, pauseWhenOffscreen]);
+
+  useEffect(() => {
+    playbackRef.current?.setMotionPaused(motionPaused);
+  }, [motionPaused]);
+
+  useEffect(() => {
+    playbackRef.current?.setBenchmarkRendering(benchmarkRendering);
+  }, [benchmarkRendering]);
 
   return <canvas ref={canvasRef} className={`space-canvas ${className}`.trim()} aria-hidden="true" />;
 }

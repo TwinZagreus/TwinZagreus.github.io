@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 const GalaxyDustSettingsContext = createContext(null);
 const STORAGE_KEY = "twinz-galaxy-dust-count";
+const MOTION_PAUSED_STORAGE_KEY = "twinz-galaxy-motion-paused";
+const MOTION_CONFIGURATION_STORAGE_KEY = "twinz-galaxy-motion-configuration";
 const MIN_DUST_COUNT = 0;
 const MAX_DUST_COUNT = 300;
 
@@ -30,8 +32,11 @@ function GalaxyDustSettingsDialog() {
   const {
     dustCount,
     automaticDustCount,
+    canvasFrameRate,
+    motionPaused,
     isDialogOpen,
     setDustCount,
+    setMotionPaused,
     resetDustCount,
     setDialogOpen,
   } = useGalaxyDustSettings();
@@ -98,8 +103,12 @@ function GalaxyDustSettingsDialog() {
         </header>
 
         <div className="dust-settings-status" aria-live="polite">
-          <span>Rendering</span>
+          <span>{motionPaused ? "Paused" : "Rendering"}</span>
           <strong>{dustCount === null ? `Auto / ${automaticDustCount}` : `${dustCount} particles`}</strong>
+        </div>
+        <div className="dust-settings-telemetry" aria-live="polite">
+          <span>Canvas FPS</span>
+          <strong>{canvasFrameRate} FPS</strong>
         </div>
 
         <label className="dust-settings-toggle">
@@ -108,6 +117,15 @@ function GalaxyDustSettingsDialog() {
             <small>Controls dust particles and their bright trails.</small>
           </span>
           <input type="checkbox" checked={isEnabled} onChange={handleEnabledChange} />
+          <i aria-hidden="true" />
+        </label>
+
+        <label className="dust-settings-toggle">
+          <span>
+            <strong>Pause galaxy motion</strong>
+            <small>Freezes stars, orbits, light trails, and the core.</small>
+          </span>
+          <input type="checkbox" checked={motionPaused} onChange={(event) => setMotionPaused(event.target.checked)} />
           <i aria-hidden="true" />
         </label>
 
@@ -168,8 +186,12 @@ function GalaxyDustSettingsDialog() {
 
 export function GalaxyDustProvider({ children }) {
   const [dustCount, setDustCountState] = useState(null);
+  const [motionPaused, setMotionPausedState] = useState(false);
+  const [canvasFrameRate, setCanvasFrameRateState] = useState(0);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [automaticDustCount, setAutomaticDustCount] = useState(180);
+  const [motionPreference, setMotionPreference] = useState(null);
+  const [motionSettingsReady, setMotionSettingsReady] = useState(false);
 
   useEffect(() => {
     const storedCount = window.sessionStorage.getItem(STORAGE_KEY);
@@ -177,6 +199,24 @@ export function GalaxyDustProvider({ children }) {
       const nextCount = Number(storedCount);
       if (nextCount >= MIN_DUST_COUNT && nextCount <= MAX_DUST_COUNT) setDustCountState(nextCount);
     }
+    try {
+      const savedMotionConfiguration = JSON.parse(window.localStorage.getItem(MOTION_CONFIGURATION_STORAGE_KEY));
+      if (savedMotionConfiguration
+        && typeof savedMotionConfiguration.paused === "boolean"
+        && (savedMotionConfiguration.source === "manual" || savedMotionConfiguration.source === "benchmark")) {
+        setMotionPausedState(savedMotionConfiguration.paused);
+        setMotionPreference(savedMotionConfiguration.source);
+      } else if (window.sessionStorage.getItem(MOTION_PAUSED_STORAGE_KEY) === "true") {
+        const legacyConfiguration = { paused: true, source: "manual" };
+        window.localStorage.setItem(MOTION_CONFIGURATION_STORAGE_KEY, JSON.stringify(legacyConfiguration));
+        setMotionPausedState(true);
+        setMotionPreference("manual");
+      }
+    } catch {
+      // Storage can be unavailable in private or restricted browser contexts.
+      setMotionPreference("unavailable");
+    }
+    setMotionSettingsReady(true);
 
     const updateAutomaticCount = () => setAutomaticDustCount(getAutomaticDustCount());
     updateAutomaticCount();
@@ -194,6 +234,35 @@ export function GalaxyDustProvider({ children }) {
   const resetDustCount = useCallback(() => {
     setDustCountState(null);
     window.sessionStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  const setMotionPaused = useCallback((isPaused) => {
+    const nextPaused = Boolean(isPaused);
+    setMotionPausedState(nextPaused);
+    window.sessionStorage.setItem(MOTION_PAUSED_STORAGE_KEY, String(nextPaused));
+    try {
+      window.localStorage.setItem(MOTION_CONFIGURATION_STORAGE_KEY, JSON.stringify({ paused: nextPaused, source: "manual" }));
+    } catch {
+      // Keep the in-memory setting when persistent storage is unavailable.
+    }
+    setMotionPreference("manual");
+  }, []);
+
+  const applyPerformanceBenchmarkResult = useCallback((averageFrameRate) => {
+    const nextPaused = averageFrameRate <= 60;
+    setMotionPausedState(nextPaused);
+    window.sessionStorage.setItem(MOTION_PAUSED_STORAGE_KEY, String(nextPaused));
+    try {
+      window.localStorage.setItem(MOTION_CONFIGURATION_STORAGE_KEY, JSON.stringify({ paused: nextPaused, source: "benchmark" }));
+    } catch {
+      // Keep the in-memory result when persistent storage is unavailable.
+    }
+    setMotionPreference("benchmark");
+  }, []);
+
+  const setCanvasFrameRate = useCallback((frameRate) => {
+    const nextFrameRate = Math.max(0, Math.round(Number(frameRate) || 0));
+    setCanvasFrameRateState((currentFrameRate) => currentFrameRate === nextFrameRate ? currentFrameRate : nextFrameRate);
   }, []);
 
   useEffect(() => {
@@ -221,11 +290,18 @@ export function GalaxyDustProvider({ children }) {
   const value = useMemo(() => ({
     dustCount,
     automaticDustCount,
+    canvasFrameRate,
+    motionPaused,
+    motionPreference,
+    motionSettingsReady,
     isDialogOpen,
     setDustCount,
+    setCanvasFrameRate,
+    setMotionPaused,
+    applyPerformanceBenchmarkResult,
     resetDustCount,
     setDialogOpen,
-  }), [automaticDustCount, dustCount, isDialogOpen, resetDustCount, setDustCount]);
+  }), [applyPerformanceBenchmarkResult, automaticDustCount, canvasFrameRate, dustCount, isDialogOpen, motionPaused, motionPreference, motionSettingsReady, resetDustCount, setCanvasFrameRate, setDustCount, setMotionPaused]);
 
   return (
     <GalaxyDustSettingsContext.Provider value={value}>

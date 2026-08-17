@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import BlogIndex from "./BlogIndex";
 import AboutTimeline from "./AboutTimeline";
 import SpaceCanvas from "./SpaceCanvas";
@@ -33,14 +33,64 @@ function LoadingGate({ progressComplete, ready, entering, onEnter }) {
   );
 }
 
-function HomeExperience({ posts, age }) {
-  const { dustCount } = useGalaxyDustSettings();
+function HomeExperience({ posts, age, benchmarkEnabled }) {
+  const {
+    dustCount,
+    motionPaused,
+    motionPreference,
+    motionSettingsReady,
+    setCanvasFrameRate,
+    applyPerformanceBenchmarkResult,
+  } = useGalaxyDustSettings();
+  const [isBenchmarking, setIsBenchmarking] = useState(false);
+  const benchmarkStartedRef = useRef(false);
+  const benchmarkActiveRef = useRef(false);
+  const benchmarkSamplesRef = useRef([]);
+  const benchmarkTimerRef = useRef(null);
+
+  const stopBenchmark = useCallback(() => {
+    window.clearTimeout(benchmarkTimerRef.current);
+    benchmarkTimerRef.current = null;
+    benchmarkActiveRef.current = false;
+    setIsBenchmarking(false);
+  }, []);
+
+  const handleFrameRateChange = useCallback((frameRate) => {
+    setCanvasFrameRate(frameRate);
+    if (benchmarkActiveRef.current && frameRate > 0) benchmarkSamplesRef.current.push(frameRate);
+  }, [setCanvasFrameRate]);
+
+  useEffect(() => {
+    if (!benchmarkEnabled || !motionSettingsReady || motionPreference !== null || benchmarkStartedRef.current) return undefined;
+
+    benchmarkStartedRef.current = true;
+    benchmarkActiveRef.current = true;
+    benchmarkSamplesRef.current = [];
+    setIsBenchmarking(true);
+    benchmarkTimerRef.current = window.setTimeout(() => {
+      const samples = benchmarkSamplesRef.current;
+      const averageFrameRate = samples.length
+        ? samples.reduce((total, sample) => total + sample, 0) / samples.length
+        : 0;
+      benchmarkActiveRef.current = false;
+      setIsBenchmarking(false);
+      applyPerformanceBenchmarkResult(averageFrameRate);
+    }, 3000);
+
+    return () => window.clearTimeout(benchmarkTimerRef.current);
+  }, [applyPerformanceBenchmarkResult, benchmarkEnabled, motionPreference, motionSettingsReady]);
+
+  useEffect(() => {
+    if (motionPreference !== null && benchmarkActiveRef.current) stopBenchmark();
+  }, [motionPreference, stopBenchmark]);
+
+  useEffect(() => () => stopBenchmark(), [stopBenchmark]);
 
   return (
     <div className="home-shell">
       <main className="snap-main">
         <section className="hero-section" id="home">
-          <SpaceCanvas mode="home" className="hero-space-canvas" pauseWhenOffscreen dustCountOverride={dustCount} />
+          <SpaceCanvas mode="home" className="hero-space-canvas" pauseWhenOffscreen dustCountOverride={dustCount} motionPaused={motionPaused} benchmarkRendering={isBenchmarking} onFrameRateChange={handleFrameRateChange} />
           <div className="hero-grid" />
           <div className="hero-copy">
             <p className="eyebrow reveal-up"><span>01</span> PERSONAL SIGNAL / 1998</p>
@@ -106,7 +156,7 @@ export default function AstralHome({ posts }) {
 
   return (
     <div className={`astral-app ${entered ? "is-entered" : ""} ${entering ? "is-entering" : ""}`}>
-      <HomeExperience posts={posts} age={age} />
+      <HomeExperience posts={posts} age={age} benchmarkEnabled={entered === true} />
       {entered === false && <LoadingGate progressComplete={progressComplete} ready={ready} entering={entering} onEnter={enter} />}
     </div>
   );

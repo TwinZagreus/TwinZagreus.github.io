@@ -168,11 +168,11 @@ function RouteTransitionLayer() {
 
 function ExperienceChromeContent({ children }) {
   const pathname = usePathname();
-  const { dustCount } = useGalaxyDustSettings();
+  const { dustCount, motionPaused, setCanvasFrameRate } = useGalaxyDustSettings();
 
   return (
     <>
-      {pathname !== "/" && <SpaceCanvas mode="home" className="persistent-space-canvas" dustCountOverride={dustCount} />}
+      {pathname !== "/" && <SpaceCanvas mode="home" className="persistent-space-canvas" dustCountOverride={dustCount} motionPaused={motionPaused} onFrameRateChange={setCanvasFrameRate} />}
       <div className="site-vignette" />
       <SiteHeader />
       {children}
