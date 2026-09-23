@@ -36,9 +36,9 @@ export default function BlogIndex({ posts }) {
       <div className="section-heading reveal-up">
         <div>
           <p className="eyebrow"><span>02</span> SIGNAL ARCHIVE</p>
-          <h2>Notes from<br /><em>the orbit.</em></h2>
+          <h2>笔记</h2>
         </div>
-        <p className="section-intro">Experiments, field notes, and quiet observations from the edge of the interface.</p>
+        <p className="section-intro"></p>
       </div>
 
       <div className="archive-layout">

@@ -119,7 +119,7 @@ export default function AstralHome({ posts }) {
   const [progressComplete, setProgressComplete] = useState(false);
   const [ready, setReady] = useState(false);
   const [entering, setEntering] = useState(false);
-  const [entered, setEntered] = useState(null);
+  const [entered, setEntered] = useState(false);
   const [age, setAge] = useState(2026 - 1998);
 
   useEffect(() => {
@@ -157,7 +157,7 @@ export default function AstralHome({ posts }) {
   return (
     <div className={`astral-app ${entered ? "is-entered" : ""} ${entering ? "is-entering" : ""}`}>
       <HomeExperience posts={posts} age={age} benchmarkEnabled={entered === true} />
-      {entered === false && <LoadingGate progressComplete={progressComplete} ready={ready} entering={entering} onEnter={enter} />}
+      {entered !== true && <LoadingGate progressComplete={progressComplete} ready={ready} entering={entering} onEnter={enter} />}
     </div>
   );
 }
