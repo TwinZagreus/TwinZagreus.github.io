@@ -86,8 +86,13 @@ function HomeExperience({ posts, age, benchmarkEnabled }) {
 
   useEffect(() => () => stopBenchmark(), [stopBenchmark]);
 
+  const guardHomeInteraction = (event) => {
+    if (event.target instanceof Element && event.target.closest(".hero-profile")) return;
+    event.preventDefault();
+  };
+
   return (
-    <div className="home-shell">
+    <div className="home-shell" onCopy={guardHomeInteraction} onCut={guardHomeInteraction} onDragStart={guardHomeInteraction}>
       <main className="snap-main">
         <section className="hero-section" id="home">
           <SpaceCanvas mode="home" className="hero-space-canvas" pauseWhenOffscreen dustCountOverride={dustCount} motionPaused={motionPaused} benchmarkRendering={isBenchmarking} onFrameRateChange={handleFrameRateChange} />
@@ -96,7 +101,7 @@ function HomeExperience({ posts, age, benchmarkEnabled }) {
             <p className="eyebrow reveal-up"><span>01</span> PERSONAL SIGNAL / 1998</p>
             <h1 className="hero-title reveal-up">Learn to<br /><em>swim in waves.</em></h1>
             <div className="hero-socials reveal-up" aria-label="Twinz social profiles">
-              {socialLinks.map(({ label, href, icon }) => <a href={href} key={label} target="_blank" rel="noreferrer"><img src={icon} alt="" aria-hidden="true" />{label}</a>)}
+              {socialLinks.map(({ label, href, icon }) => <a href={href} key={label} target="_blank" rel="noreferrer"><img src={icon} alt="" aria-hidden="true" draggable={false} />{label}</a>)}
             </div>
             <a href="#blog" className="hero-link reveal-up">Explore the archive <Arrow /></a>
           </div>

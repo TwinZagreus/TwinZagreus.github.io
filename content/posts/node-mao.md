@@ -1,9 +1,9 @@
 ---
-title: "随记"
-slug: 随记
-tags: [随记]
+title: "毛选笔记"
+slug: mao-notes
+tags: [mao]
 date: 2026-09-29
-excerpt: "粗读毛选"
+excerpt: ""
 ---
 
 

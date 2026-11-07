@@ -30,10 +30,14 @@ export function ArticleTransitionLink({ href, className = "", children, onClick,
   return <a href={href} className={className} onClick={handleClick} {...props}>{children}</a>;
 }
 
-export function HomeLink({ href = "/#home", className = "", children, onClick, ...props }) {
+export function HomeLink({ href = "/#home", className = "", children, onClick, transition = false, ...props }) {
   const handleClick = (event) => {
     markSessionEntered();
     onClick?.(event);
+    if (!transition || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    event.preventDefault();
+    window.dispatchEvent(new CustomEvent("twinz:navigate", { detail: { href } }));
   };
 
   return <a href={href} className={className} onClick={handleClick} {...props}>{children}</a>;
@@ -82,7 +86,7 @@ function SiteHeader() {
 
   return (
     <header className="site-header" ref={headerRef}>
-      <HomeLink href={isArticlePage ? "/#blog" : "/#home"} className="brand-tag" aria-label={isArticlePage ? "Return to blog index" : "Return to home"}>
+      <HomeLink href={isArticlePage ? "/#blog" : "/#home"} className="brand-tag" aria-label={isArticlePage ? "Return to blog index" : "Return to home"} transition={isArticlePage}>
         <span className="brand-dot" /> TWINZ / 1998
       </HomeLink>
       <nav className="header-links" aria-label="主要导航">
@@ -109,6 +113,7 @@ function RouteTransitionLayer() {
   const planeRef = useRef(null);
   const progressRef = useRef(null);
   const pendingHref = useRef(null);
+  const pendingHash = useRef("");
   const timelineRef = useRef(null);
 
   const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -123,6 +128,7 @@ function RouteTransitionLayer() {
       }
 
       pendingHref.current = href;
+      pendingHash.current = new URL(href, window.location.origin).hash;
       timelineRef.current?.kill();
       timelineRef.current = gsap.timeline({ defaults: { ease: "power4.inOut" } });
       timelineRef.current
@@ -152,7 +158,23 @@ function RouteTransitionLayer() {
         .to(progressRef.current, { scaleX: 0, duration: 0.22, ease: "power2.in" })
         .to(planeRef.current, { scaleY: 0, duration: 0.44 }, "<0.04")
         .set(layerRef.current, { autoAlpha: 0, pointerEvents: "none" })
-        .add(() => { pendingHref.current = null; });
+        .add(() => {
+          const hash = pendingHash.current;
+          pendingHash.current = "";
+          pendingHref.current = null;
+
+          if (!hash) return;
+
+          let targetId = hash.slice(1);
+          try {
+            targetId = decodeURIComponent(targetId);
+          } catch {
+            // Keep the raw hash when it is not valid percent-encoding.
+          }
+
+          const target = document.getElementById(targetId);
+          target?.scrollIntoView({ behavior: "instant", block: "start" });
+        });
     });
 
     return () => window.cancelAnimationFrame(reveal);

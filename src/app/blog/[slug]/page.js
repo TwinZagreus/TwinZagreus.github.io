@@ -1,15 +1,19 @@
 import Link from "next/link";
-import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import ArticleOutline from "../../../components/ArticleOutline";
+import MarkdownBody from "../../../components/MarkdownBody";
 import { HomeLink } from "../../../components/ExperienceChrome";
+import { renderMarkdown } from "../../../lib/markdown";
 import { getPostBySlug, getPosts } from "../../../lib/posts";
 
 export function generateStaticParams() {
   return getPosts().map((post) => ({ slug: post.slug }));
 }
 
-export default function PostPage({ params }) {
+export default async function PostPage({ params }) {
   const post = getPostBySlug(params.slug);
   if (!post) return <main className="not-found"><p>Transmission not found.</p><Link href="/#blog">Return to archive</Link></main>;
+
+  const { html, headings } = await renderMarkdown(post.body);
 
   return (
     <main className="article-shell">
@@ -19,8 +23,9 @@ export default function PostPage({ params }) {
           <h1>{post.title}</h1>
           <p>{post.excerpt}</p>
         </header>
-        <MarkdownRenderer content={post.body} />
-        <footer className="article-footer"><HomeLink href="/#blog">← Return to archive</HomeLink><span>End of note / {String(getPosts().findIndex((item) => item.slug === post.slug) + 1).padStart(2, "0")}</span></footer>
+        <ArticleOutline key={post.slug} headings={headings} />
+        <MarkdownBody html={html} />
+        <footer className="article-footer"><HomeLink href="/#blog" transition>← Return to archive</HomeLink><span>End of note / {String(getPosts().findIndex((item) => item.slug === post.slug) + 1).padStart(2, "0")}</span></footer>
       </article>
     </main>
   );
