@@ -5,6 +5,7 @@ import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import rehypeKatex from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
+import remarkHighlight from "./remark-highlight.js";
 
 function textContent(node) {
   if (node.type === "text") return node.value;
@@ -61,6 +62,7 @@ export async function renderMarkdown(content) {
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
+    .use(remarkHighlight)
     .use(remarkRehype)
     .use(rehypeCollectHeadings, headings)
     .use(rehypeKatex)

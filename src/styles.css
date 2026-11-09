@@ -209,6 +209,7 @@ main { position: relative; z-index: 3; }
 .markdown-body p { margin: 0 0 24px; }
 .markdown-body a { color: var(--cyan); text-decoration: underline; text-underline-offset: 4px; }
 .markdown-body strong { color: var(--ink); font-weight: 700; }
+.markdown-body mark, .markdown-body .md-highlight { padding: 0 .18em; color: var(--ink); background: linear-gradient(180deg, rgba(90, 215, 237, .18), rgba(172, 147, 255, .12)); border-bottom: 1px solid rgba(90, 215, 237, .55); border-radius: 2px 2px 0 0; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .markdown-body code { padding: 3px 6px; color: var(--cyan); background: rgba(90,215,237,.08); font: .85em var(--mono); }
 .markdown-body pre { margin: 31px 0; padding: 22px; overflow-x: auto; border: 1px solid var(--line); background: rgba(8, 12, 29, .8); }
 .markdown-body pre code { padding: 0; color: #b9c2e5; background: none; line-height: 1.7; }
