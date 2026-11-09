@@ -1,7 +1,7 @@
 ---
 title: "毛选笔记"
 slug: mao-notes
-tags: [mao]
+tags: [twinz]
 date: 2026-09-29
 excerpt: ""
 ---
