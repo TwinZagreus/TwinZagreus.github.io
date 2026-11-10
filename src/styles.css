@@ -213,8 +213,13 @@ main { position: relative; z-index: 3; }
 .markdown-body code { padding: 3px 6px; color: var(--cyan); background: rgba(90,215,237,.08); font: .85em var(--mono); }
 .markdown-body pre { margin: 31px 0; padding: 22px; overflow-x: auto; border: 1px solid var(--line); background: rgba(8, 12, 29, .8); }
 .markdown-body pre code { padding: 0; color: #b9c2e5; background: none; line-height: 1.7; }
-.markdown-body ul { margin: 0 0 26px; padding-left: 20px; }
+.markdown-body ol, .markdown-body ul { margin: 0 0 26px; padding-left: 1.9em; list-style-position: outside; }
+.markdown-body ol { list-style-type: decimal; }
+.markdown-body ul { list-style-type: disc; list-style-type: "-  "; }
 .markdown-body li { padding-left: 7px; margin-bottom: 7px; }
+.markdown-body li::marker { color: var(--cyan); font-family: var(--mono); font-weight: 600; }
+.markdown-body ul > li::marker { color: var(--purple); font-weight: 500; }
+.markdown-body li > ol, .markdown-body li > ul { margin: 10px 0 0; padding-left: 1.6em; }
 .markdown-body blockquote { margin: 35px 0; padding: 4px 0 4px 22px; color: var(--purple); border-left: 1px solid var(--purple); font: italic 19px/1.7 var(--display); }
 .markdown-body .katex-display { margin: 35px 0; padding: 25px 15px; overflow-x: auto; color: #e4e6ff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: center; }
 .math-display { margin: 35px 0; padding: 25px 15px; overflow-x: auto; color: #e4e6ff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font: 21px/1.8 Georgia, serif; text-align: center; letter-spacing: .02em; }
